@@ -1,0 +1,9 @@
+/*
+  Plus Jakarta Sans loaded from Google Fonts via fonts.css.
+  The font-family stack is defined as --font-sans in theme.css and applied
+  globally to html and body.
+*/
+
+@import "./fonts.css";
+@import "./tailwind.css";
+@import "./theme.css";
