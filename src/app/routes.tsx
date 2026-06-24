@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/Layout";
 import { DashboardOverview } from "./pages/DashboardOverview";
 import { Applications } from "./pages/Applications";
+import { Pipeline } from "./pages/Pipeline";
 import { Settings } from "./pages/Settings";
 import { Auth } from "./pages/Auth";
 
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: DashboardOverview },
       { path: "applications", Component: Applications },
+      { path: "pipeline", Component: Pipeline },
       { path: "settings", Component: Settings },
     ],
   },

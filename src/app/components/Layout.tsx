@@ -9,6 +9,7 @@ import {
   Moon,
   Menu,
   X,
+  KanbanSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ import { RoundSelector } from "./RoundSelector";
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/applications", label: "Applications", icon: Briefcase },
+  { path: "/pipeline", label: "Pipeline", icon: KanbanSquare },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 

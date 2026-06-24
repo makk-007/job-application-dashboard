@@ -120,6 +120,25 @@ export function DashboardOverview() {
     [applications],
   );
 
+  const sourceEffectiveness = useMemo(() => {
+    const bySource = new Map<string, { total: number; movedPast: number }>();
+    for (const app of applications) {
+      const entry = bySource.get(app.source) ?? { total: 0, movedPast: 0 };
+      entry.total += 1;
+      if (["screening", "interviewing", "offer"].includes(app.status)) {
+        entry.movedPast += 1;
+      }
+      bySource.set(app.source, entry);
+    }
+    return Array.from(bySource.entries())
+      .map(([source, { total, movedPast }]) => ({
+        source: source.charAt(0).toUpperCase() + source.slice(1),
+        total,
+        rate: total > 0 ? Math.round((movedPast / total) * 100) : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [applications]);
+
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -321,6 +340,50 @@ export function DashboardOverview() {
               </ul>
             )}
           </div>
+        </div>
+
+        <div className="bg-card rounded-xl border card-resting p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-1">
+            Source Effectiveness
+          </h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            Which channels are producing applications that move forward
+          </p>
+          {loading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-8 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : sourceEffectiveness.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">
+                Add applications with different sources to compare effectiveness
+                here.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {sourceEffectiveness.map((row) => (
+                <li key={row.source}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm text-foreground">
+                      {row.source}
+                    </span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {row.rate}% of {row.total}
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-1.5">
+                    <div
+                      className="bg-gradient-to-r from-brand-400 to-brand-600 h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${row.rate}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="bg-card rounded-xl border card-resting p-5">
