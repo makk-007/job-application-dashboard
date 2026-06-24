@@ -7,6 +7,8 @@ import {
   Trophy,
   AlertCircle,
   RefreshCw,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -24,6 +26,12 @@ import { KPICard } from "../components/KPICard";
 import { StatusBadge } from "../components/StatusBadge";
 import { Skeleton } from "../components/ui/skeleton";
 import { getApplications } from "../../services/applications";
+import {
+  ContactWithCompany,
+  getContacts,
+  needsFollowUp,
+  markContactedToday,
+} from "../../services/contacts";
 import { ApplicationWithCompany } from "../types";
 import { useRound } from "../context/RoundContext";
 import {
@@ -37,6 +45,7 @@ export function DashboardOverview() {
   const [applications, setApplications] = useState<ApplicationWithCompany[]>(
     [],
   );
+  const [contacts, setContacts] = useState<ContactWithCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +53,12 @@ export function DashboardOverview() {
     setLoading(true);
     setError(null);
     try {
-      setApplications(await getApplications(selectedRoundId ?? undefined));
+      const [apps, contactsData] = await Promise.all([
+        getApplications(selectedRoundId ?? undefined),
+        getContacts(),
+      ]);
+      setApplications(apps);
+      setContacts(contactsData);
     } catch (e: any) {
       setError(e.message);
       toast.error("Failed to load dashboard", { description: e.message });
@@ -108,6 +122,38 @@ export function DashboardOverview() {
         .slice(0, 5),
     [applications],
   );
+
+  const followUpContacts = useMemo(
+    () =>
+      contacts
+        .filter((c) => needsFollowUp(c.lastContactedAt))
+        .sort((a, b) => {
+          if (!a.lastContactedAt) return -1;
+          if (!b.lastContactedAt) return 1;
+          return (
+            new Date(a.lastContactedAt).getTime() -
+            new Date(b.lastContactedAt).getTime()
+          );
+        })
+        .slice(0, 5),
+    [contacts],
+  );
+
+  const handleMarkContacted = async (contact: ContactWithCompany) => {
+    try {
+      const updated = await markContactedToday(contact.id);
+      setContacts((prev) =>
+        prev.map((c) =>
+          c.id === contact.id
+            ? { ...c, lastContactedAt: updated.lastContactedAt }
+            : c,
+        ),
+      );
+      toast.success("Marked as contacted today", { description: contact.name });
+    } catch (e: any) {
+      toast.error("Failed to update contact", { description: e.message });
+    }
+  };
 
   const recentActivity = useMemo(
     () =>
@@ -340,6 +386,57 @@ export function DashboardOverview() {
               </ul>
             )}
           </div>
+        </div>
+
+        <div className="bg-card rounded-xl border card-resting p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">
+            Needs Follow-up
+          </h2>
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : followUpContacts.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">
+                {contacts.length === 0
+                  ? "Add contacts to track who needs a follow-up."
+                  : "You're caught up. No contacts need a follow-up right now."}
+              </p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {followUpContacts.map((contact) => (
+                <motion.div
+                  key={contact.id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-muted/50"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {contact.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                      <Clock className="size-3 shrink-0" aria-hidden="true" />
+                      {contact.lastContactedAt
+                        ? "Follow-up due"
+                        : "Never contacted"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleMarkContacted(contact)}
+                    title="Mark as contacted today"
+                    className="p-1.5 text-muted-foreground hover:text-[var(--status-offer-strong)] hover:bg-[var(--status-offer-tint)] rounded-md transition-colors shrink-0"
+                  >
+                    <CheckCircle2 className="size-4" aria-hidden="true" />
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="bg-card rounded-xl border card-resting p-5">

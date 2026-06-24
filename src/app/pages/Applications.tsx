@@ -18,6 +18,9 @@ import {
   Plane,
   Globe2,
   Building2,
+  Users,
+  UserPlus,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -41,6 +44,13 @@ import {
   deleteChecklistItem,
 } from "../../services/applications";
 import { findOrCreateCompanyByName } from "../../services/companies";
+import {
+  ContactWithCompany,
+  getContacts,
+  getApplicationContacts,
+  linkContactToApplication,
+  unlinkContactFromApplication,
+} from "../../services/contacts";
 import { useRound } from "../context/RoundContext";
 import { useUndoableDelete } from "../context/UndoableDeleteContext";
 import { useEscapeKey } from "../hooks/useEscapeKey";
@@ -468,6 +478,13 @@ function ApplicationDetailDrawer({
     application.relocationSponsored,
   );
 
+  const [linkedContacts, setLinkedContacts] = useState<
+    (ContactWithCompany & { linkId: string; roleInProcess: string })[]
+  >([]);
+  const [allContacts, setAllContacts] = useState<ContactWithCompany[]>([]);
+  const [contactToAdd, setContactToAdd] = useState("");
+  const [linkingContact, setLinkingContact] = useState(false);
+
   useEffect(() => {
     setApp(application);
     setNotes(application.notes ?? "");
@@ -486,6 +503,7 @@ function ApplicationDetailDrawer({
     setEditRelocationRequired(application.relocationRequired);
     setEditRelocationSponsored(application.relocationSponsored);
     loadChecklist();
+    loadContacts();
   }, [application.id]);
 
   const loadChecklist = async () => {
@@ -493,6 +511,53 @@ function ApplicationDetailDrawer({
       setChecklist(await getChecklistItems(application.id));
     } catch (e: any) {
       toast.error("Failed to load checklist", { description: e.message });
+    }
+  };
+
+  const loadContacts = async () => {
+    try {
+      const [links, all] = await Promise.all([
+        getApplicationContacts(application.id),
+        getContacts(),
+      ]);
+      setLinkedContacts(
+        links.map((l) => ({
+          ...l.contact,
+          linkId: l.id,
+          roleInProcess: l.roleInProcess,
+        })),
+      );
+      setAllContacts(all);
+    } catch (e: any) {
+      toast.error("Failed to load contacts", { description: e.message });
+    }
+  };
+
+  const handleLinkContact = async () => {
+    if (!contactToAdd) return;
+    setLinkingContact(true);
+    try {
+      await linkContactToApplication(app.id, contactToAdd);
+      const contact = allContacts.find((c) => c.id === contactToAdd);
+      toast.success("Contact linked", {
+        description: contact?.name,
+      });
+      setContactToAdd("");
+      await loadContacts();
+    } catch (e: any) {
+      toast.error("Failed to link contact", { description: e.message });
+    } finally {
+      setLinkingContact(false);
+    }
+  };
+
+  const handleUnlinkContact = async (linkId: string, name: string) => {
+    try {
+      await unlinkContactFromApplication(linkId);
+      setLinkedContacts((prev) => prev.filter((c) => c.linkId !== linkId));
+      toast.success("Contact unlinked", { description: name });
+    } catch (e: any) {
+      toast.error("Failed to unlink contact", { description: e.message });
     }
   };
 
@@ -973,6 +1038,86 @@ function ApplicationDetailDrawer({
               >
                 <Plus className="size-4" />
                 Add
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground mb-3 block">
+              Contacts
+            </label>
+            {linkedContacts.length === 0 ? (
+              <p className="text-sm text-muted-foreground mb-3">
+                No contacts linked to this application yet.
+              </p>
+            ) : (
+              <ul className="space-y-2 mb-3">
+                {linkedContacts.map((contact) => (
+                  <li
+                    key={contact.linkId}
+                    className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-muted/50"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Users
+                        className="size-3.5 text-muted-foreground shrink-0"
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {contact.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {contact.role || contact.relationship}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {contact.email && (
+                        <a
+                          href={`mailto:${contact.email}`}
+                          title={contact.email}
+                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                        >
+                          <Mail className="size-3.5" aria-hidden="true" />
+                        </a>
+                      )}
+                      <button
+                        onClick={() =>
+                          handleUnlinkContact(contact.linkId, contact.name)
+                        }
+                        title="Unlink contact"
+                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                      >
+                        <X className="size-3.5" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex gap-2">
+              <select
+                value={contactToAdd}
+                onChange={(e) => setContactToAdd(e.target.value)}
+                className={`flex-1 ${selectCls}`}
+              >
+                <option value="">Select a contact to link...</option>
+                {allContacts
+                  .filter((c) => !linkedContacts.some((lc) => lc.id === c.id))
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                      {c.companyName ? ` (${c.companyName})` : ""}
+                    </option>
+                  ))}
+              </select>
+              <button
+                onClick={handleLinkContact}
+                disabled={!contactToAdd || linkingContact}
+                className="px-4 h-9 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-1.5 text-sm shrink-0"
+              >
+                <UserPlus className="size-4" />
+                Link
               </button>
             </div>
           </div>

@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   KanbanSquare,
+  Users,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/applications", label: "Applications", icon: Briefcase },
   { path: "/pipeline", label: "Pipeline", icon: KanbanSquare },
+  { path: "/contacts", label: "Contacts", icon: Users },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 

@@ -101,6 +101,21 @@ export type Database = {
         >;
         Update: Partial<Database["public"]["Tables"]["applications"]["Insert"]>;
       };
+      application_contacts: {
+        Row: {
+          id: string;
+          application_id: string;
+          contact_id: string;
+          role_in_process: string;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["application_contacts"]["Row"],
+          "id"
+        >;
+        Update: Partial<
+          Database["public"]["Tables"]["application_contacts"]["Insert"]
+        >;
+      };
       checklist: {
         Row: {
           id: string;
