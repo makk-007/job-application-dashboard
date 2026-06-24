@@ -21,6 +21,13 @@ import {
   Users,
   UserPlus,
   Mail,
+  CalendarClock,
+  CheckCircle2,
+  XCircle,
+  Ban,
+  Clock,
+  FileText,
+  Trophy,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -29,6 +36,10 @@ import {
   ApplicationSource,
   WorkType,
   ChecklistItem,
+  InterviewRoundType,
+  InterviewOutcome,
+  JobDocument,
+  Offer,
 } from "../types";
 import {
   getApplications,
@@ -51,6 +62,20 @@ import {
   linkContactToApplication,
   unlinkContactFromApplication,
 } from "../../services/contacts";
+import {
+  InterviewWithContext,
+  getApplicationInterviews,
+  createInterview,
+  updateInterview,
+  deleteInterview,
+} from "../../services/interviews";
+import {
+  getDocuments,
+  getApplicationDocuments,
+  linkDocumentToApplication,
+  unlinkDocumentFromApplication,
+} from "../../services/documents";
+import { getApplicationOffer, estimateTotalComp } from "../../services/offers";
 import { useRound } from "../context/RoundContext";
 import { useUndoableDelete } from "../context/UndoableDeleteContext";
 import { useEscapeKey } from "../hooks/useEscapeKey";
@@ -82,6 +107,78 @@ const SOURCES: ApplicationSource[] = [
 
 const WORK_TYPES: WorkType[] = ["onsite", "remote", "hybrid"];
 const CURRENCIES = ["USD", "EUR", "GBP", "GHS", "CAD"];
+
+const INTERVIEW_ROUND_TYPES: InterviewRoundType[] = [
+  "phone_screen",
+  "technical",
+  "behavioral",
+  "onsite",
+  "final",
+  "other",
+];
+
+const INTERVIEW_ROUND_TYPE_LABEL: Record<InterviewRoundType, string> = {
+  phone_screen: "Phone Screen",
+  technical: "Technical",
+  behavioral: "Behavioral",
+  onsite: "Onsite",
+  final: "Final Round",
+  other: "Other",
+};
+
+const INTERVIEW_OUTCOMES: InterviewOutcome[] = [
+  "pending",
+  "passed",
+  "failed",
+  "cancelled",
+];
+
+const interviewOutcomeConfig: Record<
+  InterviewOutcome,
+  { label: string; icon: typeof Clock; color: string; bg: string }
+> = {
+  pending: {
+    label: "Pending",
+    icon: Clock,
+    color: "text-[var(--status-screening-strong)]",
+    bg: "bg-[var(--status-screening-tint)]",
+  },
+  passed: {
+    label: "Passed",
+    icon: CheckCircle2,
+    color: "text-[var(--status-offer-strong)]",
+    bg: "bg-[var(--status-offer-tint)]",
+  },
+  failed: {
+    label: "Failed",
+    icon: XCircle,
+    color: "text-[var(--status-rejected-strong)]",
+    bg: "bg-[var(--status-rejected-tint)]",
+  },
+  cancelled: {
+    label: "Cancelled",
+    icon: Ban,
+    color: "text-[var(--status-withdrawn-strong)]",
+    bg: "bg-[var(--status-withdrawn-tint)]",
+  },
+};
+
+function formatInterviewDateTime(iso: string | null): string {
+  if (!iso) return "No date set";
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+const DOCUMENT_TYPE_LABEL: Record<string, string> = {
+  resume: "Resume",
+  cover_letter: "Cover Letter",
+  portfolio: "Portfolio",
+  other: "Other",
+};
 
 function formatSalary(
   min: number | null,
@@ -485,6 +582,29 @@ function ApplicationDetailDrawer({
   const [contactToAdd, setContactToAdd] = useState("");
   const [linkingContact, setLinkingContact] = useState(false);
 
+  const [interviews, setInterviews] = useState<InterviewWithContext[]>([]);
+  const [showAddInterview, setShowAddInterview] = useState(false);
+  const [savingInterview, setSavingInterview] = useState(false);
+  const [editingInterviewId, setEditingInterviewId] = useState<string | null>(
+    null,
+  );
+  const [interviewForm, setInterviewForm] = useState({
+    roundType: "phone_screen" as InterviewRoundType,
+    scheduledAt: "",
+    interviewerContactId: "",
+    outcome: "pending" as InterviewOutcome,
+    notes: "",
+  });
+
+  const [linkedDocuments, setLinkedDocuments] = useState<
+    (JobDocument & { linkId: string })[]
+  >([]);
+  const [allDocuments, setAllDocuments] = useState<JobDocument[]>([]);
+  const [documentToAdd, setDocumentToAdd] = useState("");
+  const [linkingDocument, setLinkingDocument] = useState(false);
+
+  const [offer, setOffer] = useState<Offer | null>(null);
+
   useEffect(() => {
     setApp(application);
     setNotes(application.notes ?? "");
@@ -504,6 +624,9 @@ function ApplicationDetailDrawer({
     setEditRelocationSponsored(application.relocationSponsored);
     loadChecklist();
     loadContacts();
+    loadInterviews();
+    loadDocuments();
+    loadOffer();
   }, [application.id]);
 
   const loadChecklist = async () => {
@@ -511,6 +634,126 @@ function ApplicationDetailDrawer({
       setChecklist(await getChecklistItems(application.id));
     } catch (e: any) {
       toast.error("Failed to load checklist", { description: e.message });
+    }
+  };
+
+  const loadInterviews = async () => {
+    try {
+      setInterviews(await getApplicationInterviews(application.id));
+    } catch (e: any) {
+      toast.error("Failed to load interviews", { description: e.message });
+    }
+  };
+
+  const resetInterviewForm = () => {
+    setInterviewForm({
+      roundType: "phone_screen",
+      scheduledAt: "",
+      interviewerContactId: "",
+      outcome: "pending",
+      notes: "",
+    });
+    setEditingInterviewId(null);
+  };
+
+  const handleAddInterview = async () => {
+    setSavingInterview(true);
+    try {
+      const payload = {
+        applicationId: app.id,
+        roundType: interviewForm.roundType,
+        scheduledAt: interviewForm.scheduledAt
+          ? new Date(interviewForm.scheduledAt).toISOString()
+          : null,
+        interviewerContactId: interviewForm.interviewerContactId || null,
+        outcome: interviewForm.outcome,
+        notes: interviewForm.notes,
+      };
+      if (editingInterviewId) {
+        await updateInterview(editingInterviewId, payload);
+        toast.success("Interview updated");
+      } else {
+        await createInterview(payload);
+        toast.success("Interview added");
+      }
+      resetInterviewForm();
+      setShowAddInterview(false);
+      await loadInterviews();
+    } catch (e: any) {
+      toast.error("Failed to save interview", { description: e.message });
+    } finally {
+      setSavingInterview(false);
+    }
+  };
+
+  const handleEditInterview = (interview: InterviewWithContext) => {
+    setInterviewForm({
+      roundType: interview.roundType,
+      scheduledAt: interview.scheduledAt
+        ? new Date(interview.scheduledAt).toISOString().slice(0, 16)
+        : "",
+      interviewerContactId: interview.interviewerContactId ?? "",
+      outcome: interview.outcome,
+      notes: interview.notes,
+    });
+    setEditingInterviewId(interview.id);
+    setShowAddInterview(true);
+  };
+
+  const handleDeleteInterview = async (id: string) => {
+    try {
+      await deleteInterview(id);
+      setInterviews((prev) => prev.filter((i) => i.id !== id));
+      toast.success("Interview removed");
+    } catch (e: any) {
+      toast.error("Failed to remove interview", { description: e.message });
+    }
+  };
+
+  const loadDocuments = async () => {
+    try {
+      const [links, all] = await Promise.all([
+        getApplicationDocuments(application.id),
+        getDocuments(),
+      ]);
+      setLinkedDocuments(links.map((l) => ({ ...l.document, linkId: l.id })));
+      setAllDocuments(all);
+    } catch (e: any) {
+      toast.error("Failed to load documents", { description: e.message });
+    }
+  };
+
+  const loadOffer = async () => {
+    try {
+      setOffer(await getApplicationOffer(application.id));
+    } catch (e: any) {
+      toast.error("Failed to load offer", { description: e.message });
+    }
+  };
+
+  const handleLinkDocument = async () => {
+    if (!documentToAdd) return;
+    setLinkingDocument(true);
+    try {
+      await linkDocumentToApplication(app.id, documentToAdd);
+      const doc = allDocuments.find((d) => d.id === documentToAdd);
+      toast.success("Document linked", { description: doc?.name });
+      setDocumentToAdd("");
+      await loadDocuments();
+    } catch (e: any) {
+      toast.error("Failed to link document", { description: e.message });
+    } finally {
+      setLinkingDocument(false);
+    }
+  };
+
+  const handleUnlinkDocument = async (linkId: string, name: string) => {
+    try {
+      await unlinkDocumentFromApplication(linkId);
+      setLinkedDocuments((prev) => prev.filter((d) => d.linkId !== linkId));
+      toast.success("Document unlinked", { description: name });
+    } catch (e: any) {
+      toast.error("Failed to unlink document", { description: e.message });
     }
   };
 
@@ -1038,6 +1281,295 @@ function ApplicationDetailDrawer({
               >
                 <Plus className="size-4" />
                 Add
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium text-foreground">
+                Interviews
+              </label>
+              <button
+                onClick={() => {
+                  if (showAddInterview) {
+                    resetInterviewForm();
+                    setShowAddInterview(false);
+                  } else {
+                    resetInterviewForm();
+                    setShowAddInterview(true);
+                  }
+                }}
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline underline-offset-4"
+              >
+                <Plus className="size-3.5" aria-hidden="true" />
+                {showAddInterview ? "Cancel" : "Add Round"}
+              </button>
+            </div>
+
+            {interviews.length === 0 && !showAddInterview ? (
+              <p className="text-sm text-muted-foreground mb-3">
+                No interview rounds logged yet.
+              </p>
+            ) : (
+              <ul className="space-y-2 mb-3">
+                {interviews.map((interview) => {
+                  const OutcomeIcon =
+                    interviewOutcomeConfig[interview.outcome].icon;
+                  return (
+                    <li
+                      key={interview.id}
+                      className="flex items-start justify-between gap-3 p-2.5 rounded-lg bg-muted/50"
+                    >
+                      <button
+                        onClick={() => handleEditInterview(interview)}
+                        className="flex-1 min-w-0 text-left"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2 py-0.5 text-[10px] ${interviewOutcomeConfig[interview.outcome].bg} ${interviewOutcomeConfig[interview.outcome].color}`}
+                          >
+                            <OutcomeIcon
+                              className="size-2.5 shrink-0"
+                              aria-hidden="true"
+                            />
+                            {interviewOutcomeConfig[interview.outcome].label}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {INTERVIEW_ROUND_TYPE_LABEL[interview.roundType]}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <CalendarClock
+                            className="size-3 shrink-0"
+                            aria-hidden="true"
+                          />
+                          {formatInterviewDateTime(interview.scheduledAt)}
+                          {interview.interviewerName &&
+                            ` · ${interview.interviewerName}`}
+                        </p>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteInterview(interview.id)}
+                        title="Remove interview"
+                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0"
+                      >
+                        <Trash2 className="size-3.5" aria-hidden="true" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {showAddInterview && (
+              <div className="p-3 rounded-lg border border-border space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={interviewForm.roundType}
+                    onChange={(e) =>
+                      setInterviewForm((f) => ({
+                        ...f,
+                        roundType: e.target.value as InterviewRoundType,
+                      }))
+                    }
+                    className={selectCls}
+                  >
+                    {INTERVIEW_ROUND_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {INTERVIEW_ROUND_TYPE_LABEL[t]}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={interviewForm.outcome}
+                    onChange={(e) =>
+                      setInterviewForm((f) => ({
+                        ...f,
+                        outcome: e.target.value as InterviewOutcome,
+                      }))
+                    }
+                    className={selectCls}
+                  >
+                    {INTERVIEW_OUTCOMES.map((o) => (
+                      <option key={o} value={o}>
+                        {interviewOutcomeConfig[o].label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <input
+                  type="datetime-local"
+                  value={interviewForm.scheduledAt}
+                  onChange={(e) =>
+                    setInterviewForm((f) => ({
+                      ...f,
+                      scheduledAt: e.target.value,
+                    }))
+                  }
+                  className={inputCls}
+                />
+                <select
+                  value={interviewForm.interviewerContactId}
+                  onChange={(e) =>
+                    setInterviewForm((f) => ({
+                      ...f,
+                      interviewerContactId: e.target.value,
+                    }))
+                  }
+                  className={selectCls}
+                >
+                  <option value="">No interviewer set</option>
+                  {allContacts.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <textarea
+                  rows={2}
+                  value={interviewForm.notes}
+                  onChange={(e) =>
+                    setInterviewForm((f) => ({ ...f, notes: e.target.value }))
+                  }
+                  placeholder="Notes..."
+                  className={textareaCls}
+                />
+                <button
+                  onClick={handleAddInterview}
+                  disabled={savingInterview}
+                  className="w-full h-9 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                >
+                  {savingInterview
+                    ? "Saving…"
+                    : editingInterviewId
+                      ? "Save Changes"
+                      : "Add Interview"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {app.status === "offer" && (
+            <div>
+              <label className="text-sm font-medium text-foreground mb-3 block">
+                Offer
+              </label>
+              {offer ? (
+                <div className="p-3 rounded-lg bg-[var(--status-offer-tint)] border border-[var(--status-offer-strong)]/20">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-[var(--status-offer-strong)]">
+                      <Trophy
+                        className="size-3.5 shrink-0"
+                        aria-hidden="true"
+                      />
+                      Est. Total Comp
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--status-offer-strong)] tabular-nums">
+                      {offer.currency}{" "}
+                      {estimateTotalComp(offer).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Decision:{" "}
+                    {offer.decision.charAt(0).toUpperCase() +
+                      offer.decision.slice(1)}
+                    {offer.decisionDeadline &&
+                      ` · Deadline ${new Date(offer.decisionDeadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No offer details added yet. Add them from the Offers page.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium text-foreground">
+                Documents
+              </label>
+            </div>
+            {linkedDocuments.length === 0 ? (
+              <p className="text-sm text-muted-foreground mb-3">
+                No documents linked to this application yet.
+              </p>
+            ) : (
+              <ul className="space-y-2 mb-3">
+                {linkedDocuments.map((doc) => (
+                  <li
+                    key={doc.linkId}
+                    className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-muted/50"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText
+                        className="size-3.5 text-muted-foreground shrink-0"
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {doc.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {DOCUMENT_TYPE_LABEL[doc.type]}
+                          {doc.versionLabel ? ` · ${doc.versionLabel}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {doc.fileUrl && (
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Open file"
+                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                        >
+                          <ExternalLink
+                            className="size-3.5"
+                            aria-hidden="true"
+                          />
+                        </a>
+                      )}
+                      <button
+                        onClick={() =>
+                          handleUnlinkDocument(doc.linkId, doc.name)
+                        }
+                        title="Unlink document"
+                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                      >
+                        <X className="size-3.5" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex gap-2">
+              <select
+                value={documentToAdd}
+                onChange={(e) => setDocumentToAdd(e.target.value)}
+                className={`flex-1 ${selectCls}`}
+              >
+                <option value="">Select a document to link...</option>
+                {allDocuments
+                  .filter((d) => !linkedDocuments.some((ld) => ld.id === d.id))
+                  .map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                      {d.versionLabel ? ` (${d.versionLabel})` : ""}
+                    </option>
+                  ))}
+              </select>
+              <button
+                onClick={handleLinkDocument}
+                disabled={!documentToAdd || linkingDocument}
+                className="px-4 h-9 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-1.5 text-sm shrink-0"
+              >
+                <Plus className="size-4" />
+                Link
               </button>
             </div>
           </div>

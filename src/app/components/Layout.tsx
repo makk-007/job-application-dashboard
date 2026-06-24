@@ -12,6 +12,8 @@ import {
   KanbanSquare,
   Users,
   CalendarClock,
+  Trophy,
+  FileText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -25,7 +27,9 @@ const navItems = [
   { path: "/applications", label: "Applications", icon: Briefcase },
   { path: "/pipeline", label: "Pipeline", icon: KanbanSquare },
   { path: "/interviews", label: "Interviews", icon: CalendarClock },
+  { path: "/offers", label: "Offers", icon: Trophy },
   { path: "/contacts", label: "Contacts", icon: Users },
+  { path: "/documents", label: "Documents", icon: FileText },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 
