@@ -145,6 +145,24 @@ export type Database = {
         >;
         Update: never;
       };
+      interviews: {
+        Row: {
+          id: string;
+          application_id: string;
+          round_type: string;
+          scheduled_at: string | null;
+          interviewer_contact_id: string | null;
+          notes: string;
+          outcome: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["interviews"]["Row"],
+          "id" | "created_at" | "updated_at"
+        >;
+        Update: Partial<Database["public"]["Tables"]["interviews"]["Insert"]>;
+      };
     };
   };
 };

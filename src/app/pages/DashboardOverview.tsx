@@ -9,6 +9,8 @@ import {
   RefreshCw,
   Clock,
   CheckCircle2,
+  CalendarClock,
+  Building2,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -32,6 +34,11 @@ import {
   needsFollowUp,
   markContactedToday,
 } from "../../services/contacts";
+import {
+  InterviewWithContext,
+  getInterviews,
+  getUpcomingInterviews,
+} from "../../services/interviews";
 import { ApplicationWithCompany } from "../types";
 import { useRound } from "../context/RoundContext";
 import {
@@ -46,6 +53,7 @@ export function DashboardOverview() {
     [],
   );
   const [contacts, setContacts] = useState<ContactWithCompany[]>([]);
+  const [interviews, setInterviews] = useState<InterviewWithContext[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,12 +61,14 @@ export function DashboardOverview() {
     setLoading(true);
     setError(null);
     try {
-      const [apps, contactsData] = await Promise.all([
+      const [apps, contactsData, interviewsData] = await Promise.all([
         getApplications(selectedRoundId ?? undefined),
         getContacts(),
+        getInterviews(),
       ]);
       setApplications(apps);
       setContacts(contactsData);
+      setInterviews(interviewsData);
     } catch (e: any) {
       setError(e.message);
       toast.error("Failed to load dashboard", { description: e.message });
@@ -137,6 +147,11 @@ export function DashboardOverview() {
         })
         .slice(0, 5),
     [contacts],
+  );
+
+  const upcomingInterviews = useMemo(
+    () => getUpcomingInterviews(interviews, 7).slice(0, 5),
+    [interviews],
   );
 
   const handleMarkContacted = async (contact: ContactWithCompany) => {
@@ -289,6 +304,59 @@ export function DashboardOverview() {
             />
           </div>
         )}
+
+        <div className="bg-card rounded-xl border card-resting p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">
+            Upcoming Interviews
+          </h2>
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : upcomingInterviews.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">
+                Nothing scheduled in the next 7 days.
+              </p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {upcomingInterviews.map((interview) => (
+                <motion.div
+                  key={interview.id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-lg bg-muted/50"
+                >
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {interview.application.roleTitle}
+                  </p>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 truncate">
+                    <Building2 className="size-3 shrink-0" aria-hidden="true" />
+                    <span className="truncate">
+                      {interview.application.companyName}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5">
+                    <CalendarClock
+                      className="size-3 shrink-0"
+                      aria-hidden="true"
+                    />
+                    {new Date(interview.scheduledAt!).toLocaleString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-card rounded-xl border card-resting p-5">

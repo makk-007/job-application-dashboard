@@ -4,6 +4,7 @@ import { DashboardOverview } from "./pages/DashboardOverview";
 import { Applications } from "./pages/Applications";
 import { Pipeline } from "./pages/Pipeline";
 import { Contacts } from "./pages/Contacts";
+import { Interviews } from "./pages/Interviews";
 import { Settings } from "./pages/Settings";
 import { Auth } from "./pages/Auth";
 
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: "applications", Component: Applications },
       { path: "pipeline", Component: Pipeline },
       { path: "contacts", Component: Contacts },
+      { path: "interviews", Component: Interviews },
       { path: "settings", Component: Settings },
     ],
   },
