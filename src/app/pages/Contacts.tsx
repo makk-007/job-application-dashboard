@@ -13,6 +13,7 @@ import {
   Building2,
   CheckCircle2,
   Clock,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Contact, ContactRelationship } from "../types";
@@ -28,8 +29,10 @@ import {
 } from "../../services/contacts";
 import { getCompanies } from "../../services/companies";
 import { Company } from "../types";
+import { exportContactsCSV } from "../utils/dataExport";
 import { useUndoableDelete } from "../context/UndoableDeleteContext";
 import { useEscapeKey } from "../hooks/useEscapeKey";
+import { useIsMounted } from "../hooks/useIsMounted";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { Skeleton } from "../components/ui/skeleton";
 import {
@@ -324,6 +327,7 @@ function ContactModal({
 
 export function Contacts() {
   const { deleteWithUndo } = useUndoableDelete();
+  const isMounted = useIsMounted();
   const [contacts, setContacts] = useState<ContactWithCompany[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -348,15 +352,19 @@ export function Contacts() {
         getContacts(),
         getCompanies(),
       ]);
-      setContacts(contactsData);
-      setCompanies(companiesData);
+      if (isMounted()) {
+        setContacts(contactsData);
+        setCompanies(companiesData);
+      }
     } catch (e: any) {
-      setError(e.message);
-      toast.error("Failed to load contacts", { description: e.message });
+      if (isMounted()) {
+        setError(e.message);
+        toast.error("Failed to load contacts", { description: e.message });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => {
     load();
@@ -428,6 +436,14 @@ export function Contacts() {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => exportContactsCSV(contacts)}
+              title="Export to CSV"
+              className="inline-flex items-center gap-1.5 px-3 h-9 border border-border text-sm font-medium rounded-md text-foreground hover:bg-accent transition-colors"
+            >
+              <Download className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Export</span>
+            </button>
             <button
               onClick={load}
               aria-label="Refresh contacts"

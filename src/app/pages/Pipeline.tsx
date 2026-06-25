@@ -14,6 +14,7 @@ import {
   updateApplication,
 } from "../../services/applications";
 import { useRound } from "../context/RoundContext";
+import { useIsMounted } from "../hooks/useIsMounted";
 import { Skeleton } from "../components/ui/skeleton";
 import { statusConfig, ALL_STATUSES, isStale } from "../utils/statusConfig";
 
@@ -91,6 +92,7 @@ function PipelineCard({ app, onDragStart, onDragEnd, isDragging }: CardProps) {
 
 export function Pipeline() {
   const { selectedRoundId, loading: roundsLoading } = useRound();
+  const isMounted = useIsMounted();
   const [applications, setApplications] = useState<ApplicationWithCompany[]>(
     [],
   );
@@ -105,14 +107,17 @@ export function Pipeline() {
     setLoading(true);
     setError(null);
     try {
-      setApplications(await getApplications(selectedRoundId ?? undefined));
+      const data = await getApplications(selectedRoundId ?? undefined);
+      if (isMounted()) setApplications(data);
     } catch (e: any) {
-      setError(e.message);
-      toast.error("Failed to load pipeline", { description: e.message });
+      if (isMounted()) {
+        setError(e.message);
+        toast.error("Failed to load pipeline", { description: e.message });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, [selectedRoundId]);
+  }, [selectedRoundId, isMounted]);
 
   useEffect(() => {
     if (roundsLoading) return;

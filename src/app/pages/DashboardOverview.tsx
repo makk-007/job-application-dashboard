@@ -41,6 +41,7 @@ import {
 } from "../../services/interviews";
 import { ApplicationWithCompany } from "../types";
 import { useRound } from "../context/RoundContext";
+import { useIsMounted } from "../hooks/useIsMounted";
 import {
   statusConfig,
   PIPELINE_STATUSES,
@@ -49,6 +50,7 @@ import {
 
 export function DashboardOverview() {
   const { selectedRoundId, rounds, loading: roundsLoading } = useRound();
+  const isMounted = useIsMounted();
   const [applications, setApplications] = useState<ApplicationWithCompany[]>(
     [],
   );
@@ -66,16 +68,20 @@ export function DashboardOverview() {
         getContacts(),
         getInterviews(),
       ]);
-      setApplications(apps);
-      setContacts(contactsData);
-      setInterviews(interviewsData);
+      if (isMounted()) {
+        setApplications(apps);
+        setContacts(contactsData);
+        setInterviews(interviewsData);
+      }
     } catch (e: any) {
-      setError(e.message);
-      toast.error("Failed to load dashboard", { description: e.message });
+      if (isMounted()) {
+        setError(e.message);
+        toast.error("Failed to load dashboard", { description: e.message });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, [selectedRoundId]);
+  }, [selectedRoundId, isMounted]);
 
   useEffect(() => {
     if (roundsLoading) return;

@@ -28,6 +28,7 @@ import {
   Clock,
   FileText,
   Trophy,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -76,9 +77,11 @@ import {
   unlinkDocumentFromApplication,
 } from "../../services/documents";
 import { getApplicationOffer, estimateTotalComp } from "../../services/offers";
+import { exportApplicationsCSV } from "../utils/dataExport";
 import { useRound } from "../context/RoundContext";
 import { useUndoableDelete } from "../context/UndoableDeleteContext";
 import { useEscapeKey } from "../hooks/useEscapeKey";
+import { useIsMounted } from "../hooks/useIsMounted";
 import { StatusBadge } from "../components/StatusBadge";
 import { StatusHistorySection } from "../components/StatusHistorySection";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
@@ -1712,6 +1715,7 @@ function ApplicationDetailDrawer({
 export function Applications() {
   const { selectedRoundId, activeRoundId, loading: roundsLoading } = useRound();
   const { deleteWithUndo } = useUndoableDelete();
+  const isMounted = useIsMounted();
   const [applications, setApplications] = useState<ApplicationWithCompany[]>(
     [],
   );
@@ -1751,14 +1755,17 @@ export function Applications() {
     setError(null);
     try {
       // selectedRoundId of null means "All Rounds", so omit the filter
-      setApplications(await getApplications(selectedRoundId ?? undefined));
+      const data = await getApplications(selectedRoundId ?? undefined);
+      if (isMounted()) setApplications(data);
     } catch (e: any) {
-      setError(e.message);
-      toast.error("Failed to load applications", { description: e.message });
+      if (isMounted()) {
+        setError(e.message);
+        toast.error("Failed to load applications", { description: e.message });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, [selectedRoundId]);
+  }, [selectedRoundId, isMounted]);
 
   useEffect(() => {
     if (roundsLoading) return;
@@ -1930,6 +1937,14 @@ export function Applications() {
             <div className="text-sm text-muted-foreground hidden sm:block tabular-nums">
               {filtered.length} of {applications.length} applications
             </div>
+            <button
+              onClick={() => exportApplicationsCSV(applications)}
+              title="Export to CSV"
+              className="inline-flex items-center gap-1.5 px-3 h-9 border border-border text-sm font-medium rounded-md text-foreground hover:bg-accent transition-colors"
+            >
+              <Download className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Export</span>
+            </button>
             <button
               onClick={load}
               aria-label="Refresh applications"

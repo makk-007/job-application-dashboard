@@ -29,6 +29,7 @@ import { ApplicationWithCompany } from "../types";
 import { getContacts, ContactWithCompany } from "../../services/contacts";
 import { downloadInterviewsICS } from "../utils/icsExport";
 import { useUndoableDelete } from "../context/UndoableDeleteContext";
+import { useIsMounted } from "../hooks/useIsMounted";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { Skeleton } from "../components/ui/skeleton";
 import {
@@ -358,6 +359,7 @@ function InterviewModal({
 
 export function Interviews() {
   const { deleteWithUndo } = useUndoableDelete();
+  const isMounted = useIsMounted();
   const [interviews, setInterviews] = useState<InterviewWithContext[]>([]);
   const [applications, setApplications] = useState<ApplicationWithCompany[]>(
     [],
@@ -381,16 +383,20 @@ export function Interviews() {
     try {
       const [interviewsData, applicationsData, contactsData] =
         await Promise.all([getInterviews(), getApplications(), getContacts()]);
-      setInterviews(interviewsData);
-      setApplications(applicationsData);
-      setContacts(contactsData);
+      if (isMounted()) {
+        setInterviews(interviewsData);
+        setApplications(applicationsData);
+        setContacts(contactsData);
+      }
     } catch (e: any) {
-      setError(e.message);
-      toast.error("Failed to load interviews", { description: e.message });
+      if (isMounted()) {
+        setError(e.message);
+        toast.error("Failed to load interviews", { description: e.message });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => {
     load();

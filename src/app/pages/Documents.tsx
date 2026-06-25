@@ -9,6 +9,7 @@ import {
   Trash2,
   ExternalLink,
   Search,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentType, JobDocument } from "../types";
@@ -19,7 +20,9 @@ import {
   deleteDocument,
   getDocumentUsageCount,
 } from "../../services/documents";
+import { exportDocumentsCSV } from "../utils/dataExport";
 import { useUndoableDelete } from "../context/UndoableDeleteContext";
+import { useIsMounted } from "../hooks/useIsMounted";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { Skeleton } from "../components/ui/skeleton";
 import { inputCls, selectCls } from "../components/ui/input-classes";
@@ -238,6 +241,7 @@ function DocumentModal({
 
 export function Documents() {
   const { deleteWithUndo } = useUndoableDelete();
+  const isMounted = useIsMounted();
   const [documents, setDocuments] = useState<JobDocument[]>([]);
   const [usageCounts, setUsageCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -255,18 +259,24 @@ export function Documents() {
     setError(null);
     try {
       const docs = await getDocuments();
-      setDocuments(docs);
       const counts = await Promise.all(
         docs.map((d) => getDocumentUsageCount(d.id)),
       );
-      setUsageCounts(Object.fromEntries(docs.map((d, i) => [d.id, counts[i]])));
+      if (isMounted()) {
+        setDocuments(docs);
+        setUsageCounts(
+          Object.fromEntries(docs.map((d, i) => [d.id, counts[i]])),
+        );
+      }
     } catch (e: any) {
-      setError(e.message);
-      toast.error("Failed to load documents", { description: e.message });
+      if (isMounted()) {
+        setError(e.message);
+        toast.error("Failed to load documents", { description: e.message });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => {
     load();
@@ -316,6 +326,14 @@ export function Documents() {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => exportDocumentsCSV(documents)}
+              title="Export to CSV"
+              className="inline-flex items-center gap-1.5 px-3 h-9 border border-border text-sm font-medium rounded-md text-foreground hover:bg-accent transition-colors"
+            >
+              <Download className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Export</span>
+            </button>
             <button
               onClick={load}
               aria-label="Refresh documents"

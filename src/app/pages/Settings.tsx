@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Briefcase,
   Plus,
@@ -8,12 +8,35 @@ import {
   Trash2,
   X,
   Mail,
+  Bell,
+  BellOff,
+  Download,
+  FileJson,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { useRound } from "../context/RoundContext";
 import { inputCls, textareaCls } from "../components/ui/input-classes";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
+import {
+  getNotificationPermission,
+  requestNotificationPermission,
+  NotificationPermissionState,
+} from "../utils/notifications";
+import {
+  exportApplicationsCSV,
+  exportContactsCSV,
+  exportInterviewsCSV,
+  exportOffersCSV,
+  exportDocumentsCSV,
+  exportFullJSON,
+} from "../utils/dataExport";
+import { getApplications } from "../../services/applications";
+import { getContacts } from "../../services/contacts";
+import { getInterviews } from "../../services/interviews";
+import { getOffers } from "../../services/offers";
+import { getDocuments } from "../../services/documents";
 
 function AddRoundModal({
   onClose,
@@ -146,6 +169,73 @@ export function Settings() {
     name: string;
   } | null>(null);
 
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermissionState>(getNotificationPermission());
+  const [exportingType, setExportingType] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNotificationPermission(getNotificationPermission());
+  }, []);
+
+  const handleRequestNotifications = async () => {
+    const result = await requestNotificationPermission();
+    setNotificationPermission(result);
+    if (result === "granted") {
+      toast.success("Notifications enabled", {
+        description:
+          "You'll get reminders for interviews, stale applications, and offer deadlines.",
+      });
+    } else if (result === "denied") {
+      toast.error("Notifications blocked", {
+        description: "You can re-enable this in your browser's site settings.",
+      });
+    }
+  };
+
+  const handleExportCSV = async (
+    type: "applications" | "contacts" | "interviews" | "offers" | "documents",
+  ) => {
+    setExportingType(type);
+    try {
+      if (type === "applications") {
+        exportApplicationsCSV(await getApplications());
+      } else if (type === "contacts") {
+        exportContactsCSV(await getContacts());
+      } else if (type === "interviews") {
+        exportInterviewsCSV(await getInterviews());
+      } else if (type === "offers") {
+        exportOffersCSV(await getOffers());
+      } else if (type === "documents") {
+        exportDocumentsCSV(await getDocuments());
+      }
+      toast.success("Export downloaded");
+    } catch (e: any) {
+      toast.error("Failed to export data", { description: e.message });
+    } finally {
+      setExportingType(null);
+    }
+  };
+
+  const handleExportFullJSON = async () => {
+    setExportingType("full");
+    try {
+      const [applications, contacts, interviews, offers, documents] =
+        await Promise.all([
+          getApplications(),
+          getContacts(),
+          getInterviews(),
+          getOffers(),
+          getDocuments(),
+        ]);
+      exportFullJSON({ applications, contacts, interviews, offers, documents });
+      toast.success("Full backup downloaded");
+    } catch (e: any) {
+      toast.error("Failed to export data", { description: e.message });
+    } finally {
+      setExportingType(null);
+    }
+  };
+
   const activeRounds = rounds.filter((r) => !r.isArchived);
   const archivedRounds = rounds.filter((r) => r.isArchived);
 
@@ -166,6 +256,88 @@ export function Settings() {
           <div className="flex items-center gap-3">
             <Mail className="size-4 text-muted-foreground" aria-hidden="true" />
             <span className="text-sm text-foreground">{user?.email}</span>
+          </div>
+        </div>
+
+        <div className="bg-card rounded-xl border card-resting p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-1">
+            Notifications
+          </h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            Get browser reminders for upcoming interviews, stale applications,
+            and offer decision deadlines
+          </p>
+          {notificationPermission === "unsupported" ? (
+            <p className="text-sm text-muted-foreground">
+              Your browser does not support notifications.
+            </p>
+          ) : notificationPermission === "granted" ? (
+            <div className="flex items-center gap-2 text-sm text-[var(--status-offer-strong)]">
+              <Bell className="size-4 shrink-0" aria-hidden="true" />
+              Notifications are enabled
+            </div>
+          ) : notificationPermission === "denied" ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <BellOff className="size-4 shrink-0" aria-hidden="true" />
+              Notifications are blocked. Enable them in your browser's site
+              settings to use this feature.
+            </div>
+          ) : (
+            <button
+              onClick={handleRequestNotifications}
+              className="inline-flex items-center gap-1.5 px-3 h-8 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+            >
+              <Bell className="size-3.5" aria-hidden="true" />
+              Enable Notifications
+            </button>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border card-resting p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-1">
+            Export Data
+          </h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            Download your data as CSV for a single section, or a full JSON
+            backup of everything
+          </p>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {[
+              { type: "applications" as const, label: "Applications" },
+              { type: "contacts" as const, label: "Contacts" },
+              { type: "interviews" as const, label: "Interviews" },
+              { type: "offers" as const, label: "Offers" },
+              { type: "documents" as const, label: "Documents" },
+            ].map(({ type, label }) => (
+              <button
+                key={type}
+                onClick={() => handleExportCSV(type)}
+                disabled={exportingType === type}
+                className="inline-flex items-center gap-1.5 px-3 h-8 border border-border text-sm font-medium rounded-md text-foreground hover:bg-accent disabled:opacity-50 transition-colors"
+              >
+                {exportingType === type ? (
+                  <Loader2
+                    className="size-3.5 animate-spin"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Download className="size-3.5" aria-hidden="true" />
+                )}
+                {label} CSV
+              </button>
+            ))}
+            <button
+              onClick={handleExportFullJSON}
+              disabled={exportingType === "full"}
+              className="inline-flex items-center gap-1.5 px-3 h-8 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/80 disabled:opacity-50 transition-colors"
+            >
+              {exportingType === "full" ? (
+                <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <FileJson className="size-3.5" aria-hidden="true" />
+              )}
+              Full Backup (JSON)
+            </button>
           </div>
         </div>
 
