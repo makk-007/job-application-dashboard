@@ -101,6 +101,21 @@ export type Database = {
         >;
         Update: Partial<Database["public"]["Tables"]["applications"]["Insert"]>;
       };
+      application_contacts: {
+        Row: {
+          id: string;
+          application_id: string;
+          contact_id: string;
+          role_in_process: string;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["application_contacts"]["Row"],
+          "id"
+        >;
+        Update: Partial<
+          Database["public"]["Tables"]["application_contacts"]["Insert"]
+        >;
+      };
       checklist: {
         Row: {
           id: string;
@@ -129,6 +144,76 @@ export type Database = {
           "id" | "changed_at"
         >;
         Update: never;
+      };
+      interviews: {
+        Row: {
+          id: string;
+          application_id: string;
+          round_type: string;
+          scheduled_at: string | null;
+          interviewer_contact_id: string | null;
+          notes: string;
+          outcome: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["interviews"]["Row"],
+          "id" | "created_at" | "updated_at"
+        >;
+        Update: Partial<Database["public"]["Tables"]["interviews"]["Insert"]>;
+      };
+      documents: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: string;
+          name: string;
+          version_label: string;
+          file_url: string;
+          created_at: string;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["documents"]["Row"],
+          "id" | "created_at"
+        >;
+        Update: Partial<Database["public"]["Tables"]["documents"]["Insert"]>;
+      };
+      application_documents: {
+        Row: {
+          id: string;
+          application_id: string;
+          document_id: string;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["application_documents"]["Row"],
+          "id"
+        >;
+        Update: Partial<
+          Database["public"]["Tables"]["application_documents"]["Insert"]
+        >;
+      };
+      offers: {
+        Row: {
+          id: string;
+          application_id: string;
+          base_salary: number | null;
+          bonus: number | null;
+          equity: string;
+          signing_bonus: number | null;
+          benefits_notes: string;
+          currency: string;
+          decision_deadline: string | null;
+          decision: string;
+          notes: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["offers"]["Row"],
+          "id" | "created_at" | "updated_at"
+        >;
+        Update: Partial<Database["public"]["Tables"]["offers"]["Insert"]>;
       };
     };
   };

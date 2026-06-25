@@ -6,6 +6,7 @@ import { RoundProvider } from "./context/RoundContext";
 import { UndoableDeleteProvider } from "./context/UndoableDeleteContext";
 import { Toaster } from "./components/ui/sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { NotificationScheduler } from "./components/NotificationScheduler";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <AuthProvider>
           <RoundProvider>
             <UndoableDeleteProvider>
+              <NotificationScheduler />
               <RouterProvider router={router} />
               <Toaster richColors closeButton />
             </UndoableDeleteProvider>

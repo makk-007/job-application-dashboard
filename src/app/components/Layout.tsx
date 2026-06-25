@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet, Link, useLocation, Navigate } from "react-router";
+import { Link, useLocation, Navigate } from "react-router";
 import {
   LayoutDashboard,
   Briefcase,
@@ -9,6 +9,11 @@ import {
   Moon,
   Menu,
   X,
+  KanbanSquare,
+  Users,
+  CalendarClock,
+  Trophy,
+  FileText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -20,6 +25,11 @@ import { RoundSelector } from "./RoundSelector";
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/applications", label: "Applications", icon: Briefcase },
+  { path: "/pipeline", label: "Pipeline", icon: KanbanSquare },
+  { path: "/interviews", label: "Interviews", icon: CalendarClock },
+  { path: "/offers", label: "Offers", icon: Trophy },
+  { path: "/contacts", label: "Contacts", icon: Users },
+  { path: "/documents", label: "Documents", icon: FileText },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -247,9 +257,7 @@ export function Layout() {
 
       {/* Main content */}
       <main className="flex-1 lg:ml-64 min-h-screen pt-14 lg:pt-0">
-        <PageTransition>
-          <Outlet />
-        </PageTransition>
+        <PageTransition />
       </main>
     </div>
   );

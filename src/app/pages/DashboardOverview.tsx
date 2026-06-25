@@ -7,6 +7,10 @@ import {
   Trophy,
   AlertCircle,
   RefreshCw,
+  Clock,
+  CheckCircle2,
+  CalendarClock,
+  Building2,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -24,8 +28,20 @@ import { KPICard } from "../components/KPICard";
 import { StatusBadge } from "../components/StatusBadge";
 import { Skeleton } from "../components/ui/skeleton";
 import { getApplications } from "../../services/applications";
+import {
+  ContactWithCompany,
+  getContacts,
+  needsFollowUp,
+  markContactedToday,
+} from "../../services/contacts";
+import {
+  InterviewWithContext,
+  getInterviews,
+  getUpcomingInterviews,
+} from "../../services/interviews";
 import { ApplicationWithCompany } from "../types";
 import { useRound } from "../context/RoundContext";
+import { useIsMounted } from "../hooks/useIsMounted";
 import {
   statusConfig,
   PIPELINE_STATUSES,
@@ -34,9 +50,12 @@ import {
 
 export function DashboardOverview() {
   const { selectedRoundId, rounds, loading: roundsLoading } = useRound();
+  const isMounted = useIsMounted();
   const [applications, setApplications] = useState<ApplicationWithCompany[]>(
     [],
   );
+  const [contacts, setContacts] = useState<ContactWithCompany[]>([]);
+  const [interviews, setInterviews] = useState<InterviewWithContext[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,14 +63,25 @@ export function DashboardOverview() {
     setLoading(true);
     setError(null);
     try {
-      setApplications(await getApplications(selectedRoundId ?? undefined));
+      const [apps, contactsData, interviewsData] = await Promise.all([
+        getApplications(selectedRoundId ?? undefined),
+        getContacts(),
+        getInterviews(),
+      ]);
+      if (isMounted()) {
+        setApplications(apps);
+        setContacts(contactsData);
+        setInterviews(interviewsData);
+      }
     } catch (e: any) {
-      setError(e.message);
-      toast.error("Failed to load dashboard", { description: e.message });
+      if (isMounted()) {
+        setError(e.message);
+        toast.error("Failed to load dashboard", { description: e.message });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, [selectedRoundId]);
+  }, [selectedRoundId, isMounted]);
 
   useEffect(() => {
     if (roundsLoading) return;
@@ -109,6 +139,43 @@ export function DashboardOverview() {
     [applications],
   );
 
+  const followUpContacts = useMemo(
+    () =>
+      contacts
+        .filter((c) => needsFollowUp(c.lastContactedAt))
+        .sort((a, b) => {
+          if (!a.lastContactedAt) return -1;
+          if (!b.lastContactedAt) return 1;
+          return (
+            new Date(a.lastContactedAt).getTime() -
+            new Date(b.lastContactedAt).getTime()
+          );
+        })
+        .slice(0, 5),
+    [contacts],
+  );
+
+  const upcomingInterviews = useMemo(
+    () => getUpcomingInterviews(interviews, 7).slice(0, 5),
+    [interviews],
+  );
+
+  const handleMarkContacted = async (contact: ContactWithCompany) => {
+    try {
+      const updated = await markContactedToday(contact.id);
+      setContacts((prev) =>
+        prev.map((c) =>
+          c.id === contact.id
+            ? { ...c, lastContactedAt: updated.lastContactedAt }
+            : c,
+        ),
+      );
+      toast.success("Marked as contacted today", { description: contact.name });
+    } catch (e: any) {
+      toast.error("Failed to update contact", { description: e.message });
+    }
+  };
+
   const recentActivity = useMemo(
     () =>
       [...applications]
@@ -119,6 +186,25 @@ export function DashboardOverview() {
         .slice(0, 6),
     [applications],
   );
+
+  const sourceEffectiveness = useMemo(() => {
+    const bySource = new Map<string, { total: number; movedPast: number }>();
+    for (const app of applications) {
+      const entry = bySource.get(app.source) ?? { total: 0, movedPast: 0 };
+      entry.total += 1;
+      if (["screening", "interviewing", "offer"].includes(app.status)) {
+        entry.movedPast += 1;
+      }
+      bySource.set(app.source, entry);
+    }
+    return Array.from(bySource.entries())
+      .map(([source, { total, movedPast }]) => ({
+        source: source.charAt(0).toUpperCase() + source.slice(1),
+        total,
+        rate: total > 0 ? Math.round((movedPast / total) * 100) : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [applications]);
 
   if (error) {
     return (
@@ -225,6 +311,59 @@ export function DashboardOverview() {
           </div>
         )}
 
+        <div className="bg-card rounded-xl border card-resting p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">
+            Upcoming Interviews
+          </h2>
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : upcomingInterviews.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">
+                Nothing scheduled in the next 7 days.
+              </p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {upcomingInterviews.map((interview) => (
+                <motion.div
+                  key={interview.id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-lg bg-muted/50"
+                >
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {interview.application.roleTitle}
+                  </p>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 truncate">
+                    <Building2 className="size-3 shrink-0" aria-hidden="true" />
+                    <span className="truncate">
+                      {interview.application.companyName}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5">
+                    <CalendarClock
+                      className="size-3 shrink-0"
+                      aria-hidden="true"
+                    />
+                    {new Date(interview.scheduledAt!).toLocaleString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-card rounded-xl border card-resting p-5">
             <h2 className="text-sm font-semibold text-foreground mb-4">
@@ -321,6 +460,101 @@ export function DashboardOverview() {
               </ul>
             )}
           </div>
+        </div>
+
+        <div className="bg-card rounded-xl border card-resting p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">
+            Needs Follow-up
+          </h2>
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : followUpContacts.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">
+                {contacts.length === 0
+                  ? "Add contacts to track who needs a follow-up."
+                  : "You're caught up. No contacts need a follow-up right now."}
+              </p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {followUpContacts.map((contact) => (
+                <motion.div
+                  key={contact.id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-muted/50"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {contact.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                      <Clock className="size-3 shrink-0" aria-hidden="true" />
+                      {contact.lastContactedAt
+                        ? "Follow-up due"
+                        : "Never contacted"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleMarkContacted(contact)}
+                    title="Mark as contacted today"
+                    className="p-1.5 text-muted-foreground hover:text-[var(--status-offer-strong)] hover:bg-[var(--status-offer-tint)] rounded-md transition-colors shrink-0"
+                  >
+                    <CheckCircle2 className="size-4" aria-hidden="true" />
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border card-resting p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-1">
+            Source Effectiveness
+          </h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            Which channels are producing applications that move forward
+          </p>
+          {loading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-8 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : sourceEffectiveness.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">
+                Add applications with different sources to compare effectiveness
+                here.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {sourceEffectiveness.map((row) => (
+                <li key={row.source}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm text-foreground">
+                      {row.source}
+                    </span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {row.rate}% of {row.total}
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-1.5">
+                    <div
+                      className="bg-gradient-to-r from-brand-400 to-brand-600 h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${row.rate}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="bg-card rounded-xl border card-resting p-5">
