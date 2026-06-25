@@ -1,0 +1,317 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --font-sans:
+    "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-weight-medium: 600;
+  --font-weight-normal: 400;
+
+  --background: #ffffff;
+  --foreground: oklch(0.145 0 0);
+  --card: #ffffff;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+
+  /* Brand primary: #1C6E5C (deep teal/green, distinct from the university tracker's blue) */
+  --primary: #1c6e5c;
+  --primary-foreground: #ffffff;
+
+  --secondary: oklch(0.95 0.0058 264.53);
+  --secondary-foreground: #030213;
+  --muted: #ececf0;
+  --muted-foreground: #717182;
+  --accent: #e9ebef;
+  --accent-foreground: #030213;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --input: transparent;
+  --input-background: #f3f3f5;
+  --switch-background: #cbced4;
+  --ring: #1c6e5c;
+
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+
+  /* Sidebar : accent tokens wired to the brand primary */
+  --sidebar: #eef6f3;
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #1c6e5c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #d3e9e2; /* light tint of #1C6E5C for hover/active bg */
+  --sidebar-accent-foreground: #0e4337; /* dark shade of primary for active text */
+  --sidebar-border: #cde6dd;
+  --sidebar-ring: #1c6e5c;
+
+  /* Brand ramp, derived from primary #1C6E5C (light mode) */
+  --brand-50: #eaf6f2;
+  --brand-100: #cdeadf;
+  --brand-200: #9fd7c2;
+  --brand-400: #4ea889;
+  --brand-600: #155747;
+  --brand-800: #0c3a2f;
+
+  /* Status taxonomy : one hue family per application status, consistent
+     across badges, KPI icons, and charts. Each status carries a tint
+     (badge bg), a strong (icon/border), and a text (on-tint) shade. */
+  --status-lead-tint: #f1efe8;
+  --status-lead-strong: #888780;
+  --status-lead-text: #444441;
+
+  --status-applied-tint: #e6f1fb;
+  --status-applied-strong: #378add;
+  --status-applied-text: #0c447c;
+
+  --status-screening-tint: #faeeda;
+  --status-screening-strong: #ba7517;
+  --status-screening-text: #633806;
+
+  --status-interviewing-tint: #eeedfe;
+  --status-interviewing-strong: #7f77dd;
+  --status-interviewing-text: #3c3489;
+
+  --status-offer-tint: #e1f5ee;
+  --status-offer-strong: #1d9e75;
+  --status-offer-text: #085041;
+
+  --status-rejected-tint: #fcebeb;
+  --status-rejected-strong: #e24b4a;
+  --status-rejected-text: #791f1f;
+
+  --status-withdrawn-tint: #eceef1;
+  --status-withdrawn-strong: #64748b;
+  --status-withdrawn-text: #364152;
+
+  /* Elevation : two-tier shadow system */
+  --shadow-resting:
+    0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 8px rgba(15, 23, 42, 0.04);
+  --shadow-raised:
+    0 2px 4px rgba(15, 23, 42, 0.06), 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.dark {
+  /*
+    Softer dark: base is a dark green-grey (#0f1c18) that complements #1C6E5C.
+    Card and sidebar are 1-2 steps lighter so surfaces have visible depth.
+  */
+  --background: #0f1c18;
+  --foreground: #e6f2ee;
+  --card: #16261f;
+  --card-foreground: #e6f2ee;
+  --popover: #16261f;
+  --popover-foreground: #e6f2ee;
+
+  /* Slightly lighter brand green for dark backgrounds */
+  --primary: #2f9c80;
+  --primary-foreground: #ffffff;
+
+  --secondary: #1e2f29;
+  --secondary-foreground: #e6f2ee;
+  --muted: #1e2f29;
+  --muted-foreground: #7aae9c;
+  --accent: #1e2f29;
+  --accent-foreground: #e6f2ee;
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: rgba(255, 255, 255, 0.08);
+  --input: #1e2f29;
+  --input-background: #1a2b25;
+  --ring: #2f9c80;
+  --font-weight-medium: 600;
+  --font-weight-normal: 400;
+
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+
+  /* Sidebar in dark : one step darker than card, brand-tinted accent */
+  --sidebar: #0d1815;
+  --sidebar-foreground: #e6f2ee;
+  --sidebar-primary: #2f9c80;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1a3a30; /* dark tint of primary for hover/active bg */
+  --sidebar-accent-foreground: #7ddcc0; /* light primary tint for active text */
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-ring: #2f9c80;
+
+  /* Brand ramp, dark mode (lighter stops read better on dark surfaces) */
+  --brand-50: #16352c;
+  --brand-100: #194a3e;
+  --brand-200: #1e6855;
+  --brand-400: #2f9c80;
+  --brand-600: #7ddcc0;
+  --brand-800: #c5f0e2;
+
+  /* Status taxonomy, dark mode : tint becomes a dark-shade fill,
+     strong/text become light tints for contrast on dark surfaces */
+  --status-lead-tint: #2c2c2a;
+  --status-lead-strong: #b4b2a9;
+  --status-lead-text: #d3d1c7;
+
+  --status-applied-tint: #123654;
+  --status-applied-strong: #85b7eb;
+  --status-applied-text: #b5d4f4;
+
+  --status-screening-tint: #3a2604;
+  --status-screening-strong: #ef9f27;
+  --status-screening-text: #fac775;
+
+  --status-interviewing-tint: #261f4a;
+  --status-interviewing-strong: #afa9ec;
+  --status-interviewing-text: #cecbf6;
+
+  --status-offer-tint: #073026;
+  --status-offer-strong: #5dcaa5;
+  --status-offer-text: #9fe1cb;
+
+  --status-rejected-tint: #3a1414;
+  --status-rejected-strong: #f09595;
+  --status-rejected-text: #f7c1c1;
+
+  --status-withdrawn-tint: #292d33;
+  --status-withdrawn-strong: #94a3b8;
+  --status-withdrawn-text: #cbd5e1;
+
+  /* Elevation, dark mode : slightly stronger to read against dark surfaces */
+  --shadow-resting: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.16);
+  --shadow-raised:
+    0 2px 4px rgba(0, 0, 0, 0.24), 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: var(--font-sans);
+
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-400: var(--brand-400);
+  --color-brand-600: var(--brand-600);
+  --color-brand-800: var(--brand-800);
+
+  --shadow-resting: var(--shadow-resting);
+  --shadow-raised: var(--shadow-raised);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+
+  html {
+    font-size: var(--font-size);
+    font-family: var(--font-sans);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+  h4 {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input,
+  select,
+  textarea {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+  }
+}
+
+@layer utilities {
+  /* Numerals : aligns digit widths in KPI values, table counts, stats */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Elevation : resting state for cards, replaces flat shadow-sm */
+  .card-resting {
+    box-shadow: var(--shadow-resting);
+  }
+
+  /* Elevation : raised state for hover/active cards, modals */
+  .card-raised {
+    box-shadow: var(--shadow-raised);
+  }
+}
