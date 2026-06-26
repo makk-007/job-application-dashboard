@@ -155,4 +155,9 @@ browser does not support them.
 
 ## License
 
-Personal project. No license specified.
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+
+In short: you're free to use, modify, and redistribute this code for any
+noncommercial purpose (personal projects, learning, research, nonprofit and
+educational use, etc.). Commercial use requires permission from the
+licensor. See the [LICENSE](LICENSE) file for the full terms.
