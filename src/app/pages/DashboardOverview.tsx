@@ -409,6 +409,8 @@ export function DashboardOverview() {
                       borderRadius: 8,
                       fontSize: 12,
                     }}
+                    labelStyle={{ color: "var(--popover-foreground)" }}
+                    itemStyle={{ color: "var(--popover-foreground)" }}
                   />
                   <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={22}>
                     {funnelData.map((entry, i) => (
