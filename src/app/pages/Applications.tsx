@@ -211,6 +211,7 @@ function AddApplicationModal({
     companyName: "",
     roleTitle: "",
     jobPostUrl: "",
+    location: "",
     source: "job board" as ApplicationSource,
     workType: "onsite" as WorkType,
     relocationRequired: false,
@@ -270,6 +271,7 @@ function AddApplicationModal({
         roundId: activeRoundId,
         roleTitle: form.roleTitle.trim(),
         jobPostUrl: form.jobPostUrl,
+        location: form.location.trim(),
         source: form.source,
         workType: form.workType,
         relocationRequired: form.relocationRequired,
@@ -410,6 +412,19 @@ function AddApplicationModal({
                 ))}
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Location
+              </label>
+              <input
+                value={form.location}
+                onChange={(e) => set("location", e.target.value)}
+                className={inputCls}
+                placeholder="e.g. Austin, TX"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
                 Applied Date
@@ -559,6 +574,7 @@ function ApplicationDetailDrawer({
 
   const [editRoleTitle, setEditRoleTitle] = useState(application.roleTitle);
   const [editWorkType, setEditWorkType] = useState(application.workType);
+  const [editLocation, setEditLocation] = useState(application.location);
   const [editSource, setEditSource] = useState(application.source);
   const [editAppliedDate, setEditAppliedDate] = useState(
     application.appliedDate ?? "",
@@ -613,6 +629,7 @@ function ApplicationDetailDrawer({
     setNotes(application.notes ?? "");
     setEditRoleTitle(application.roleTitle);
     setEditWorkType(application.workType);
+    setEditLocation(application.location);
     setEditSource(application.source);
     setEditAppliedDate(application.appliedDate ?? "");
     setEditSalaryMin(
@@ -1028,6 +1045,27 @@ function ApplicationDetailDrawer({
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Location
+                </label>
+                {savingField === "location" && (
+                  <Loader2 className="size-3 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              <input
+                value={editLocation}
+                onChange={(e) => setEditLocation(e.target.value)}
+                onBlur={() =>
+                  editLocation !== app.location &&
+                  saveField("location", editLocation)
+                }
+                className={inputCls}
+                placeholder="e.g. Austin, TX"
+              />
             </div>
 
             <div>
@@ -1789,6 +1827,7 @@ export function Applications() {
           !query ||
           a.roleTitle.toLowerCase().includes(query) ||
           a.company.name.toLowerCase().includes(query) ||
+          (a.location ?? "").toLowerCase().includes(query) ||
           (a.notes ?? "").toLowerCase().includes(query);
         const matchStatus = statusFilter === "all" || a.status === statusFilter;
         const matchWorkType =
@@ -2188,6 +2227,11 @@ export function Applications() {
                             <div className="text-sm text-muted-foreground">
                               {app.company.name}
                             </div>
+                            {app.location && (
+                              <div className="text-xs text-muted-foreground/70">
+                                {app.location}
+                              </div>
+                            )}
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-1.5">
@@ -2406,6 +2450,7 @@ export function Applications() {
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
                           {app.company.name}
+                          {app.location ? ` · ${app.location}` : ""}
                         </p>
                       </div>
                     </div>

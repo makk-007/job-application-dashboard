@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS applications (
   contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
   role_title TEXT NOT NULL,
   job_post_url TEXT DEFAULT '',
+  location TEXT DEFAULT '',
   source TEXT NOT NULL DEFAULT 'job board'
     CHECK (source IN ('referral','job board','recruiter','company site','networking','other')),
   work_type TEXT NOT NULL DEFAULT 'onsite'
