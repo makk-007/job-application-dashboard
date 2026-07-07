@@ -13,10 +13,12 @@ import {
   Download,
   FileJson,
   Loader2,
+  Coins,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { useRound } from "../context/RoundContext";
+import { useCurrencies } from "../context/CurrencyContext";
 import { inputCls, textareaCls } from "../components/ui/input-classes";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import {
@@ -163,6 +165,9 @@ export function Settings() {
     unarchiveRound,
     deleteRound,
   } = useRound();
+  const { currencies, addCurrency, removeCurrency } = useCurrencies();
+  const [newCurrency, setNewCurrency] = useState("");
+  const [currencyError, setCurrencyError] = useState<string | null>(null);
   const [showAddRound, setShowAddRound] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
@@ -189,6 +194,17 @@ export function Settings() {
       toast.error("Notifications blocked", {
         description: "You can re-enable this in your browser's site settings.",
       });
+    }
+  };
+
+  const handleAddCurrency = () => {
+    const result = addCurrency(newCurrency);
+    if (result.ok) {
+      setNewCurrency("");
+      setCurrencyError(null);
+      toast.success(`${newCurrency.trim().toUpperCase()} added`);
+    } else {
+      setCurrencyError(result.error ?? "Couldn't add currency");
     }
   };
 
@@ -469,6 +485,64 @@ export function Settings() {
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="bg-card rounded-xl border card-resting p-5 max-w-2xl mx-4 sm:mx-8 mt-6">
+        <h2 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5">
+          <Coins className="size-4" aria-hidden="true" />
+          Currencies
+        </h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          Manage which currencies appear in Applications and Offers. Add any
+          3-letter currency code, e.g. AED for the UAE.
+        </p>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {currencies.map((c) => (
+            <span
+              key={c}
+              className="inline-flex items-center gap-1.5 pl-3 pr-2 h-8 border border-border text-sm font-medium rounded-md text-foreground bg-accent/50"
+            >
+              {c}
+              <button
+                onClick={() => removeCurrency(c)}
+                title={`Remove ${c}`}
+                className="text-muted-foreground hover:text-destructive transition-colors"
+              >
+                <X className="size-3.5" aria-hidden="true" />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex items-start gap-2">
+          <div>
+            <input
+              value={newCurrency}
+              onChange={(e) => {
+                setNewCurrency(e.target.value);
+                if (currencyError) setCurrencyError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddCurrency();
+                }
+              }}
+              placeholder="e.g. AED"
+              maxLength={3}
+              className={`${inputCls} w-28 uppercase`}
+            />
+            {currencyError && (
+              <p className="text-xs text-destructive mt-1">{currencyError}</p>
+            )}
+          </div>
+          <button
+            onClick={handleAddCurrency}
+            className="inline-flex items-center gap-1.5 px-3 h-8 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/80 transition-colors"
+          >
+            <Plus className="size-3.5" aria-hidden="true" />
+            Add Currency
+          </button>
         </div>
       </div>
 
