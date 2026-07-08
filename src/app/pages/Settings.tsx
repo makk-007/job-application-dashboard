@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Briefcase,
   Plus,
@@ -168,6 +168,21 @@ export function Settings() {
   const { currencies, addCurrency, removeCurrency } = useCurrencies();
   const [newCurrency, setNewCurrency] = useState("");
   const [currencyError, setCurrencyError] = useState<string | null>(null);
+  const leftColumnRef = useRef<HTMLDivElement>(null);
+  const [leftColumnHeight, setLeftColumnHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const node = leftColumnRef.current;
+    if (!node) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setLeftColumnHeight(entry.contentRect.height);
+      }
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   const [showAddRound, setShowAddRound] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
@@ -264,285 +279,307 @@ export function Settings() {
         </p>
       </header>
 
-      <div className="p-4 sm:p-8 max-w-3xl space-y-6">
-        <div className="bg-card rounded-xl border card-resting p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-4">
-            Account
-          </h2>
-          <div className="flex items-center gap-3">
-            <Mail className="size-4 text-muted-foreground" aria-hidden="true" />
-            <span className="text-sm text-foreground">{user?.email}</span>
+      <div className="p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div ref={leftColumnRef} className="space-y-6">
+          <div className="bg-card rounded-xl border card-resting p-5">
+            <h2 className="text-sm font-semibold text-foreground mb-4">
+              Account
+            </h2>
+            <div className="flex items-center gap-3">
+              <Mail
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span className="text-sm text-foreground">{user?.email}</span>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl border card-resting p-5">
+            <h2 className="text-sm font-semibold text-foreground mb-1">
+              Notifications
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              Get browser reminders for upcoming interviews, stale applications,
+              and offer decision deadlines
+            </p>
+            {notificationPermission === "unsupported" ? (
+              <p className="text-sm text-muted-foreground">
+                Your browser does not support notifications.
+              </p>
+            ) : notificationPermission === "granted" ? (
+              <div className="flex items-center gap-2 text-sm text-[var(--status-offer-strong)]">
+                <Bell className="size-4 shrink-0" aria-hidden="true" />
+                Notifications are enabled
+              </div>
+            ) : notificationPermission === "denied" ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <BellOff className="size-4 shrink-0" aria-hidden="true" />
+                Notifications are blocked. Enable them in your browser's site
+                settings to use this feature.
+              </div>
+            ) : (
+              <button
+                onClick={handleRequestNotifications}
+                className="inline-flex items-center gap-1.5 px-3 h-8 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+              >
+                <Bell className="size-3.5" aria-hidden="true" />
+                Enable Notifications
+              </button>
+            )}
+          </div>
+
+          <div className="bg-card rounded-xl border card-resting p-5">
+            <h2 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5">
+              <Coins className="size-4" aria-hidden="true" />
+              Currencies
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              Manage which currencies appear in Applications and Offers. Add any
+              3-letter currency code, e.g. AED for the UAE.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {currencies.map((c) => (
+                <span
+                  key={c}
+                  className="inline-flex items-center gap-1.5 pl-3 pr-2 h-8 border border-border text-sm font-medium rounded-md text-foreground bg-accent/50"
+                >
+                  {c}
+                  <button
+                    onClick={() => removeCurrency(c)}
+                    title={`Remove ${c}`}
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <X className="size-3.5" aria-hidden="true" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex items-start gap-2">
+              <div>
+                <input
+                  value={newCurrency}
+                  onChange={(e) => {
+                    setNewCurrency(e.target.value);
+                    if (currencyError) setCurrencyError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddCurrency();
+                    }
+                  }}
+                  placeholder="e.g. AED"
+                  maxLength={3}
+                  className={`${inputCls} w-28 uppercase`}
+                />
+                {currencyError && (
+                  <p className="text-xs text-destructive mt-1">
+                    {currencyError}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={handleAddCurrency}
+                className="inline-flex items-center gap-1.5 px-3 h-8 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/80 transition-colors"
+              >
+                <Plus className="size-3.5" aria-hidden="true" />
+                Add Currency
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="bg-card rounded-xl border card-resting p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-1">
-            Notifications
-          </h2>
-          <p className="text-xs text-muted-foreground mb-4">
-            Get browser reminders for upcoming interviews, stale applications,
-            and offer decision deadlines
-          </p>
-          {notificationPermission === "unsupported" ? (
-            <p className="text-sm text-muted-foreground">
-              Your browser does not support notifications.
+        <div
+          className="space-y-6 lg:overflow-y-auto"
+          style={
+            leftColumnHeight != null
+              ? { maxHeight: leftColumnHeight }
+              : undefined
+          }
+        >
+          <div className="bg-card rounded-xl border card-resting p-5">
+            <h2 className="text-sm font-semibold text-foreground mb-1">
+              Export Data
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              Download your data as CSV for a single section, or a full JSON
+              backup of everything
             </p>
-          ) : notificationPermission === "granted" ? (
-            <div className="flex items-center gap-2 text-sm text-[var(--status-offer-strong)]">
-              <Bell className="size-4 shrink-0" aria-hidden="true" />
-              Notifications are enabled
-            </div>
-          ) : notificationPermission === "denied" ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <BellOff className="size-4 shrink-0" aria-hidden="true" />
-              Notifications are blocked. Enable them in your browser's site
-              settings to use this feature.
-            </div>
-          ) : (
-            <button
-              onClick={handleRequestNotifications}
-              className="inline-flex items-center gap-1.5 px-3 h-8 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
-            >
-              <Bell className="size-3.5" aria-hidden="true" />
-              Enable Notifications
-            </button>
-          )}
-        </div>
-
-        <div className="bg-card rounded-xl border card-resting p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-1">
-            Export Data
-          </h2>
-          <p className="text-xs text-muted-foreground mb-4">
-            Download your data as CSV for a single section, or a full JSON
-            backup of everything
-          </p>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {[
-              { type: "applications" as const, label: "Applications" },
-              { type: "contacts" as const, label: "Contacts" },
-              { type: "interviews" as const, label: "Interviews" },
-              { type: "offers" as const, label: "Offers" },
-              { type: "documents" as const, label: "Documents" },
-            ].map(({ type, label }) => (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {[
+                { type: "applications" as const, label: "Applications" },
+                { type: "contacts" as const, label: "Contacts" },
+                { type: "interviews" as const, label: "Interviews" },
+                { type: "offers" as const, label: "Offers" },
+                { type: "documents" as const, label: "Documents" },
+              ].map(({ type, label }) => (
+                <button
+                  key={type}
+                  onClick={() => handleExportCSV(type)}
+                  disabled={exportingType === type}
+                  className="inline-flex items-center gap-1.5 px-3 h-8 border border-border text-sm font-medium rounded-md text-foreground hover:bg-accent disabled:opacity-50 transition-colors"
+                >
+                  {exportingType === type ? (
+                    <Loader2
+                      className="size-3.5 animate-spin"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Download className="size-3.5" aria-hidden="true" />
+                  )}
+                  {label} CSV
+                </button>
+              ))}
               <button
-                key={type}
-                onClick={() => handleExportCSV(type)}
-                disabled={exportingType === type}
-                className="inline-flex items-center gap-1.5 px-3 h-8 border border-border text-sm font-medium rounded-md text-foreground hover:bg-accent disabled:opacity-50 transition-colors"
+                onClick={handleExportFullJSON}
+                disabled={exportingType === "full"}
+                className="inline-flex items-center gap-1.5 px-3 h-8 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/80 disabled:opacity-50 transition-colors"
               >
-                {exportingType === type ? (
+                {exportingType === "full" ? (
                   <Loader2
                     className="size-3.5 animate-spin"
                     aria-hidden="true"
                   />
                 ) : (
-                  <Download className="size-3.5" aria-hidden="true" />
+                  <FileJson className="size-3.5" aria-hidden="true" />
                 )}
-                {label} CSV
+                Full Backup (JSON)
               </button>
-            ))}
-            <button
-              onClick={handleExportFullJSON}
-              disabled={exportingType === "full"}
-              className="inline-flex items-center gap-1.5 px-3 h-8 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/80 disabled:opacity-50 transition-colors"
-            >
-              {exportingType === "full" ? (
-                <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
-              ) : (
-                <FileJson className="size-3.5" aria-hidden="true" />
-              )}
-              Full Backup (JSON)
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border card-resting p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">
-                Job Search Rounds
-              </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Group applications into distinct search efforts, e.g. by season
-                or year
-              </p>
             </div>
-            <button
-              onClick={() => setShowAddRound(true)}
-              className="inline-flex items-center gap-1.5 px-3 h-8 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors shrink-0"
-            >
-              <Plus className="size-3.5" aria-hidden="true" />
-              New Round
-            </button>
           </div>
 
-          {activeRounds.length === 0 && archivedRounds.length === 0 ? (
-            <div className="text-center py-8">
-              <Briefcase
-                className="size-8 text-muted-foreground/30 mx-auto mb-2"
-                aria-hidden="true"
-              />
-              <p className="text-sm text-muted-foreground">
-                You don't have any search rounds yet. Create one to start
-                organizing your applications.
-              </p>
+          <div className="bg-card rounded-xl border card-resting p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">
+                  Job Search Rounds
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Group applications into distinct search efforts, e.g. by
+                  season or year
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAddRound(true)}
+                className="inline-flex items-center gap-1.5 px-3 h-8 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors shrink-0"
+              >
+                <Plus className="size-3.5" aria-hidden="true" />
+                New Round
+              </button>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {activeRounds.map((round) => (
-                <div
-                  key={round.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-lg bg-muted/50"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {round.name}
-                      </p>
-                      {round.isActive && (
-                        <span
-                          className="text-[10px] uppercase tracking-wide font-semibold shrink-0"
-                          style={{ color: "var(--status-offer-strong)" }}
-                        >
-                          Active
-                        </span>
+
+            {activeRounds.length === 0 && archivedRounds.length === 0 ? (
+              <div className="text-center py-8">
+                <Briefcase
+                  className="size-8 text-muted-foreground/30 mx-auto mb-2"
+                  aria-hidden="true"
+                />
+                <p className="text-sm text-muted-foreground">
+                  You don't have any search rounds yet. Create one to start
+                  organizing your applications.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {activeRounds.map((round) => (
+                  <div
+                    key={round.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-lg bg-muted/50"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {round.name}
+                        </p>
+                        {round.isActive && (
+                          <span
+                            className="text-[10px] uppercase tracking-wide font-semibold shrink-0"
+                            style={{ color: "var(--status-offer-strong)" }}
+                          >
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      {round.description && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {round.description}
+                        </p>
                       )}
                     </div>
-                    {round.description && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {round.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {!round.isActive && (
-                      <button
-                        onClick={() => setActiveRound(round.id)}
-                        title="Set as active round"
-                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-                      >
-                        <Check className="size-4" aria-hidden="true" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => archiveRound(round.id)}
-                      title="Archive round"
-                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-                    >
-                      <Archive className="size-4" aria-hidden="true" />
-                    </button>
-                    <button
-                      onClick={() =>
-                        setDeleteTarget({ id: round.id, name: round.name })
-                      }
-                      title="Delete round"
-                      className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="size-4" aria-hidden="true" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {archivedRounds.length > 0 && (
-                <>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-3 pb-1">
-                    Archived
-                  </p>
-                  {archivedRounds.map((round) => (
-                    <div
-                      key={round.id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-lg bg-muted/30 opacity-75"
-                    >
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {round.name}
-                      </p>
-                      <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!round.isActive && (
                         <button
-                          onClick={() => unarchiveRound(round.id)}
-                          title="Unarchive round"
+                          onClick={() => setActiveRound(round.id)}
+                          title="Set as active round"
                           className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                         >
-                          <ArchiveRestore
-                            className="size-4"
-                            aria-hidden="true"
-                          />
+                          <Check className="size-4" aria-hidden="true" />
                         </button>
-                        <button
-                          onClick={() =>
-                            setDeleteTarget({ id: round.id, name: round.name })
-                          }
-                          title="Delete round"
-                          className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="size-4" aria-hidden="true" />
-                        </button>
-                      </div>
+                      )}
+                      <button
+                        onClick={() => archiveRound(round.id)}
+                        title="Archive round"
+                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+                      >
+                        <Archive className="size-4" aria-hidden="true" />
+                      </button>
+                      <button
+                        onClick={() =>
+                          setDeleteTarget({ id: round.id, name: round.name })
+                        }
+                        title="Delete round"
+                        className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="size-4" aria-hidden="true" />
+                      </button>
                     </div>
-                  ))}
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+                  </div>
+                ))}
 
-      <div className="bg-card rounded-xl border card-resting p-5 max-w-2xl mx-4 sm:mx-8 mt-6">
-        <h2 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5">
-          <Coins className="size-4" aria-hidden="true" />
-          Currencies
-        </h2>
-        <p className="text-xs text-muted-foreground mb-4">
-          Manage which currencies appear in Applications and Offers. Add any
-          3-letter currency code, e.g. AED for the UAE.
-        </p>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {currencies.map((c) => (
-            <span
-              key={c}
-              className="inline-flex items-center gap-1.5 pl-3 pr-2 h-8 border border-border text-sm font-medium rounded-md text-foreground bg-accent/50"
-            >
-              {c}
-              <button
-                onClick={() => removeCurrency(c)}
-                title={`Remove ${c}`}
-                className="text-muted-foreground hover:text-destructive transition-colors"
-              >
-                <X className="size-3.5" aria-hidden="true" />
-              </button>
-            </span>
-          ))}
-        </div>
-        <div className="flex items-start gap-2">
-          <div>
-            <input
-              value={newCurrency}
-              onChange={(e) => {
-                setNewCurrency(e.target.value);
-                if (currencyError) setCurrencyError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleAddCurrency();
-                }
-              }}
-              placeholder="e.g. AED"
-              maxLength={3}
-              className={`${inputCls} w-28 uppercase`}
-            />
-            {currencyError && (
-              <p className="text-xs text-destructive mt-1">{currencyError}</p>
+                {archivedRounds.length > 0 && (
+                  <>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-3 pb-1">
+                      Archived
+                    </p>
+                    {archivedRounds.map((round) => (
+                      <div
+                        key={round.id}
+                        className="flex items-center justify-between gap-3 p-3 rounded-lg bg-muted/30 opacity-75"
+                      >
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {round.name}
+                        </p>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => unarchiveRound(round.id)}
+                            title="Unarchive round"
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+                          >
+                            <ArchiveRestore
+                              className="size-4"
+                              aria-hidden="true"
+                            />
+                          </button>
+                          <button
+                            onClick={() =>
+                              setDeleteTarget({
+                                id: round.id,
+                                name: round.name,
+                              })
+                            }
+                            title="Delete round"
+                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="size-4" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
             )}
           </div>
-          <button
-            onClick={handleAddCurrency}
-            className="inline-flex items-center gap-1.5 px-3 h-8 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/80 transition-colors"
-          >
-            <Plus className="size-3.5" aria-hidden="true" />
-            Add Currency
-          </button>
         </div>
       </div>
 
