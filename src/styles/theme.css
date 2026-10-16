@@ -89,6 +89,10 @@
   --status-withdrawn-strong: #64748b;
   --status-withdrawn-text: #364152;
 
+  --status-declined-tint: #fbeaf0;
+  --status-declined-strong: #d4537e;
+  --status-declined-text: #72243e;
+
   /* Elevation : two-tier shadow system */
   --shadow-resting:
     0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 8px rgba(15, 23, 42, 0.04);
@@ -180,6 +184,10 @@
   --status-withdrawn-tint: #292d33;
   --status-withdrawn-strong: #94a3b8;
   --status-withdrawn-text: #cbd5e1;
+
+  --status-declined-tint: #3b1426;
+  --status-declined-strong: #ed93b1;
+  --status-declined-text: #f4c0d1;
 
   /* Elevation, dark mode : slightly stronger to read against dark surfaces */
   --shadow-resting: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.16);

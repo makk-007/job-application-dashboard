@@ -23,13 +23,17 @@ import {
   deleteOffer,
   estimateTotalComp,
 } from "../../services/offers";
-import { getApplications } from "../../services/applications";
+import {
+  getApplications,
+  updateApplication,
+} from "../../services/applications";
 import { ApplicationWithCompany } from "../types";
 import { exportOffersCSV } from "../utils/dataExport";
 import { useUndoableDelete } from "../context/UndoableDeleteContext";
 import { useCurrencies } from "../context/CurrencyContext";
 import { useIsMounted } from "../hooks/useIsMounted";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
+import { MarkDeclinedModal } from "../components/MarkDeclinedModal";
 import { Skeleton } from "../components/ui/skeleton";
 import {
   inputCls,
@@ -365,6 +369,9 @@ export function Offers() {
     null,
   );
   const [savingDecisionId, setSavingDecisionId] = useState<string | null>(null);
+  const [declinePromptOffer, setDeclinePromptOffer] =
+    useState<OfferWithApplication | null>(null);
+  const [markingDeclined, setMarkingDeclined] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -421,10 +428,47 @@ export function Offers() {
       toast.success("Decision updated", {
         description: `${offer.application.roleTitle}: ${decisionConfig[decision].label}`,
       });
+
+      // Offer declined: offer to move the application to Declined as well,
+      // unless it has already been moved there.
+      if (decision === "declined") {
+        const linkedApp = applications.find((a) => a.id === offer.applicationId);
+        if (linkedApp && linkedApp.status !== "declined") {
+          setDeclinePromptOffer(offer);
+        }
+      }
     } catch (e: any) {
       toast.error("Failed to update decision", { description: e.message });
     } finally {
       setSavingDecisionId(null);
+    }
+  };
+
+  const handleConfirmMarkDeclined = async () => {
+    const offer = declinePromptOffer;
+    if (!offer) return;
+    setMarkingDeclined(true);
+    try {
+      await updateApplication(offer.applicationId, { status: "declined" });
+      if (isMounted()) {
+        setApplications((prev) =>
+          prev.map((a) =>
+            a.id === offer.applicationId ? { ...a, status: "declined" } : a,
+          ),
+        );
+      }
+      toast.success("Application marked as Declined", {
+        description: offer.application.roleTitle,
+      });
+    } catch (e: any) {
+      toast.error("Failed to update application status", {
+        description: e.message,
+      });
+    } finally {
+      if (isMounted()) {
+        setMarkingDeclined(false);
+        setDeclinePromptOffer(null);
+      }
     }
   };
 
@@ -667,6 +711,15 @@ export function Offers() {
           />
         )}
       </AnimatePresence>
+
+      {declinePromptOffer && (
+        <MarkDeclinedModal
+          applicationLabel={`${declinePromptOffer.application.roleTitle} at ${declinePromptOffer.application.companyName}`}
+          saving={markingDeclined}
+          onConfirm={handleConfirmMarkDeclined}
+          onCancel={() => setDeclinePromptOffer(null)}
+        />
+      )}
 
       {deleteTarget && (
         <ConfirmDeleteModal

@@ -6,6 +6,7 @@ import {
   Trophy,
   XCircle,
   Ban,
+  ThumbsDown,
   LucideIcon,
 } from "lucide-react";
 import { ApplicationStatus } from "../types";
@@ -66,6 +67,12 @@ export const statusConfig: Record<ApplicationStatus, StatusConfigEntry> = {
     color: "text-[var(--status-withdrawn-strong)]",
     bgColor: "bg-[var(--status-withdrawn-tint)]",
   },
+  declined: {
+    label: "Declined",
+    icon: ThumbsDown,
+    color: "text-[var(--status-declined-strong)]",
+    bgColor: "bg-[var(--status-declined-tint)]",
+  },
 };
 
 /** Statuses in pipeline order, used for the Kanban board and funnel chart. */
@@ -77,8 +84,17 @@ export const PIPELINE_STATUSES: ApplicationStatus[] = [
   "offer",
 ];
 
-/** Terminal statuses reachable from any non-terminal stage. */
-export const TERMINAL_STATUSES: ApplicationStatus[] = ["rejected", "withdrawn"];
+/**
+ * Terminal statuses reachable from any non-terminal stage.
+ * - rejected: the company turned the application down
+ * - withdrawn: the user pulled out before receiving an offer
+ * - declined: the company made an offer and the user turned it down
+ */
+export const TERMINAL_STATUSES: ApplicationStatus[] = [
+  "rejected",
+  "withdrawn",
+  "declined",
+];
 
 export const ALL_STATUSES: ApplicationStatus[] = [
   ...PIPELINE_STATUSES,

@@ -11,14 +11,14 @@ job-search workflow specifically.
 
 **Applications**
 Full CRUD with search, filter, sort, and pagination. Detail drawer with
-autosaving fields, a 7-stage status lifecycle (lead, applied, screening,
-interviewing, offer, rejected, withdrawn) with automatic status history
-logging, per-application checklists, bulk select and delete, and
+autosaving fields, an 8-status lifecycle (lead, applied, screening,
+interviewing, offer, rejected, withdrawn, declined) with automatic status
+history logging, per-application checklists, bulk select and delete, and
 single-item delete with undo. Each application tracks source, work type,
 relocation requirements, and salary range.
 
 **Pipeline**
-Drag-and-drop Kanban board across all seven statuses, with optimistic
+Drag-and-drop Kanban board across all eight statuses, with optimistic
 status updates and rollback if a save fails.
 
 **Contacts**
@@ -38,7 +38,9 @@ page and inline from the Application Detail Drawer.
 Side-by-side comparison cards for every offer (base salary, bonus,
 signing bonus, equity, benefits, decision deadline), automatically ranked
 by estimated total compensation with the highest highlighted. Decision
-status (pending, accepted, declined) is editable inline.
+status (pending, accepted, declined) is editable inline. Declining an
+offer prompts to move the linked application to the Declined status as
+well.
 
 **Documents**
 A reusable library of resume, cover letter, portfolio, and other document
@@ -96,7 +98,6 @@ src/
   styles/               Tailwind entrypoint, theme tokens, fonts
 supabase/
   schema.sql            Full database schema, RLS policies, triggers, indexes
-  seed.sql              Realistic test data covering every feature
 ```
 
 Each entity (applications, contacts, interviews, offers, documents,
@@ -116,16 +117,12 @@ types defined in src/app/types.ts.
 3. Run supabase/schema.sql in the Supabase SQL Editor. This creates every
    table, RLS policy, trigger, and index the app needs in one pass.
 4. Sign up for an account through the app's normal Sign Up flow.
-5. Optionally, run supabase/seed.sql (also in the SQL Editor, while
-   signed in as that user) to populate realistic test data covering every
-   status, source, work type, and edge case across all entities. Safe to
-   re-run; it cleans up its own previously seeded rows first.
-6. Install dependencies and start the dev server:
+5. Install dependencies and start the dev server:
    ```bash
    npm install
    npm run dev
    ```
-7. Build for production:
+6. Build for production:
    ```bash
    npm run build
    ```
@@ -142,8 +139,7 @@ types defined in src/app/types.ts.
   (handle_updated_at) and is the basis for the "stale application"
   detection (21+ days with no status change while in Applied or
   Screening). Any script that needs to backdate this column for testing
-  purposes must disable the trigger first; see the pattern used in
-  supabase/seed.sql.
+  purposes must disable the trigger first.
 
 ## Browser Notifications
 
