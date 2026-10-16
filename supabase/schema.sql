@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS applications (
   salary_max NUMERIC(12, 2),
   currency TEXT DEFAULT 'USD',
   status TEXT NOT NULL DEFAULT 'lead'
-    CHECK (status IN ('lead','applied','screening','interviewing','offer','rejected','withdrawn')),
+    CHECK (status IN ('lead','applied','screening','interviewing','offer','rejected','withdrawn','declined')),
   applied_date DATE,
   notes TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW(),

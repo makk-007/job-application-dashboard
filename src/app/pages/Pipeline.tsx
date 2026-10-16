@@ -133,6 +133,7 @@ export function Pipeline() {
       offer: [],
       rejected: [],
       withdrawn: [],
+      declined: [],
     };
     for (const app of applications) {
       map[app.status].push(app);

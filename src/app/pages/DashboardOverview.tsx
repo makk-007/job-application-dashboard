@@ -104,18 +104,24 @@ export function DashboardOverview() {
       offer: applications.filter((a) => a.status === "offer").length,
       rejected: applications.filter((a) => a.status === "rejected").length,
       withdrawn: applications.filter((a) => a.status === "withdrawn").length,
+      declined: applications.filter((a) => a.status === "declined").length,
     }),
     [applications],
   );
 
   const responseRate = useMemo(() => {
     const appliedOrFurther = applications.filter((a) =>
-      ["applied", "screening", "interviewing", "offer", "rejected"].includes(
-        a.status,
-      ),
+      [
+        "applied",
+        "screening",
+        "interviewing",
+        "offer",
+        "rejected",
+        "declined",
+      ].includes(a.status),
     ).length;
     const movedPastApplied = applications.filter((a) =>
-      ["screening", "interviewing", "offer"].includes(a.status),
+      ["screening", "interviewing", "offer", "declined"].includes(a.status),
     ).length;
     if (appliedOrFurther === 0) return null;
     return Math.round((movedPastApplied / appliedOrFurther) * 100);
@@ -192,7 +198,9 @@ export function DashboardOverview() {
     for (const app of applications) {
       const entry = bySource.get(app.source) ?? { total: 0, movedPast: 0 };
       entry.total += 1;
-      if (["screening", "interviewing", "offer"].includes(app.status)) {
+      if (
+        ["screening", "interviewing", "offer", "declined"].includes(app.status)
+      ) {
         entry.movedPast += 1;
       }
       bySource.set(app.source, entry);

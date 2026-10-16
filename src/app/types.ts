@@ -12,7 +12,8 @@ export type ApplicationStatus =
   | "interviewing"
   | "offer"
   | "rejected"
-  | "withdrawn";
+  | "withdrawn"
+  | "declined";
 
 export type ApplicationSource =
   | "referral"
