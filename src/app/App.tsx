@@ -3,6 +3,7 @@ import { router } from "./routes";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { RoundProvider } from "./context/RoundContext";
+import { CurrencyProvider } from "./context/CurrencyContext";
 import { UndoableDeleteProvider } from "./context/UndoableDeleteContext";
 import { Toaster } from "./components/ui/sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -14,11 +15,13 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <RoundProvider>
-            <UndoableDeleteProvider>
-              <NotificationScheduler />
-              <RouterProvider router={router} />
-              <Toaster richColors closeButton />
-            </UndoableDeleteProvider>
+            <CurrencyProvider>
+              <UndoableDeleteProvider>
+                <NotificationScheduler />
+                <RouterProvider router={router} />
+                <Toaster richColors closeButton />
+              </UndoableDeleteProvider>
+            </CurrencyProvider>
           </RoundProvider>
         </AuthProvider>
       </ThemeProvider>

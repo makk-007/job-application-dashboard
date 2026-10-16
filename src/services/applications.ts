@@ -30,6 +30,7 @@ function rowToApplication(row: any): Application {
     contactId: row.contact_id,
     roleTitle: row.role_title,
     jobPostUrl: row.job_post_url ?? "",
+    location: row.location ?? "",
     source: row.source,
     workType: row.work_type,
     relocationRequired: row.relocation_required,
@@ -105,6 +106,7 @@ export interface CreateApplicationInput {
   contactId?: string | null;
   roleTitle: string;
   jobPostUrl?: string;
+  location?: string;
   source?: Application["source"];
   workType?: Application["workType"];
   relocationRequired?: boolean;
@@ -136,6 +138,7 @@ export async function createApplication(
       contact_id: input.contactId ?? null,
       role_title: input.roleTitle,
       job_post_url: input.jobPostUrl ?? "",
+      location: input.location ?? "",
       source: input.source ?? "job board",
       work_type: input.workType ?? "onsite",
       relocation_required: input.relocationRequired ?? false,
@@ -165,6 +168,7 @@ export type UpdateApplicationInput = Partial<{
   contactId: string | null;
   roleTitle: string;
   jobPostUrl: string;
+  location: string;
   source: Application["source"];
   workType: Application["workType"];
   relocationRequired: boolean;
@@ -193,6 +197,7 @@ export async function updateApplication(
   if (updates.roleTitle !== undefined) dbUpdates.role_title = updates.roleTitle;
   if (updates.jobPostUrl !== undefined)
     dbUpdates.job_post_url = updates.jobPostUrl;
+  if (updates.location !== undefined) dbUpdates.location = updates.location;
   if (updates.source !== undefined) dbUpdates.source = updates.source;
   if (updates.workType !== undefined) dbUpdates.work_type = updates.workType;
   if (updates.relocationRequired !== undefined)
@@ -266,6 +271,7 @@ export async function duplicateApplication(id: string): Promise<Application> {
       contact_id: original.contactId,
       role_title: `${original.roleTitle} (Copy)`,
       job_post_url: original.jobPostUrl,
+      location: original.location,
       source: original.source,
       work_type: original.workType,
       relocation_required: original.relocationRequired,
@@ -322,9 +328,7 @@ async function logStatusChange(
   if (error) console.error("Failed to log status change:", error);
 }
 
-export async function getStatusHistory(
-  applicationId: string,
-): Promise<
+export async function getStatusHistory(applicationId: string): Promise<
   {
     fromStatus: ApplicationStatus | null;
     toStatus: ApplicationStatus;

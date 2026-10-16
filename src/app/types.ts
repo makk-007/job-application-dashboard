@@ -99,6 +99,7 @@ export interface Application {
   contactId: string | null;
   roleTitle: string;
   jobPostUrl: string;
+  location: string;
   source: ApplicationSource;
   workType: WorkType;
   relocationRequired: boolean;

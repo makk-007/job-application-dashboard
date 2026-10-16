@@ -27,6 +27,7 @@ import { getApplications } from "../../services/applications";
 import { ApplicationWithCompany } from "../types";
 import { exportOffersCSV } from "../utils/dataExport";
 import { useUndoableDelete } from "../context/UndoableDeleteContext";
+import { useCurrencies } from "../context/CurrencyContext";
 import { useIsMounted } from "../hooks/useIsMounted";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { Skeleton } from "../components/ui/skeleton";
@@ -37,7 +38,6 @@ import {
 } from "../components/ui/input-classes";
 
 const DECISIONS: OfferDecision[] = ["pending", "accepted", "declined"];
-const CURRENCIES = ["USD", "EUR", "GBP", "GHS", "CAD"];
 
 const decisionConfig: Record<
   OfferDecision,
@@ -94,6 +94,7 @@ function AddOfferModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { currencies } = useCurrencies();
   const [form, setForm] = useState({
     applicationId: "",
     baseSalary: "",
@@ -214,7 +215,7 @@ function AddOfferModal({
                 }
                 className={`${selectCls} shrink-0`}
               >
-                {CURRENCIES.map((c) => (
+                {currencies.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
               </select>
