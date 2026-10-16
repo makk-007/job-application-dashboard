@@ -262,14 +262,47 @@ ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own contacts"
   ON contacts FOR ALL
   USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id
+    AND (
+      contacts.company_id IS NULL
+      OR EXISTS (
+        SELECT 1 FROM companies c
+        WHERE c.id = contacts.company_id
+          AND c.user_id = auth.uid()
+      )
+    )
+  );
 
 -- Applications
 ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own applications"
   ON applications FOR ALL
   USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM companies c
+      WHERE c.id = applications.company_id
+        AND c.user_id = auth.uid()
+    )
+    AND (
+      applications.round_id IS NULL
+      OR EXISTS (
+        SELECT 1 FROM job_search_rounds r
+        WHERE r.id = applications.round_id
+          AND r.user_id = auth.uid()
+      )
+    )
+    AND (
+      applications.contact_id IS NULL
+      OR EXISTS (
+        SELECT 1 FROM contacts ct
+        WHERE ct.id = applications.contact_id
+          AND ct.user_id = auth.uid()
+      )
+    )
+  );
 
 -- Application_Contacts
 ALTER TABLE application_contacts ENABLE ROW LEVEL SECURITY;
@@ -280,6 +313,18 @@ CREATE POLICY "Users can manage their application-contact links"
       SELECT 1 FROM applications a
       WHERE a.id = application_contacts.application_id
         AND a.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM applications a
+      WHERE a.id = application_contacts.application_id
+        AND a.user_id = auth.uid()
+    )
+    AND EXISTS (
+      SELECT 1 FROM contacts ct
+      WHERE ct.id = application_contacts.contact_id
+        AND ct.user_id = auth.uid()
     )
   );
 
@@ -305,6 +350,21 @@ CREATE POLICY "Users can manage interviews for their applications"
       WHERE a.id = interviews.application_id
         AND a.user_id = auth.uid()
     )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM applications a
+      WHERE a.id = interviews.application_id
+        AND a.user_id = auth.uid()
+    )
+    AND (
+      interviews.interviewer_contact_id IS NULL
+      OR EXISTS (
+        SELECT 1 FROM contacts ct
+        WHERE ct.id = interviews.interviewer_contact_id
+          AND ct.user_id = auth.uid()
+      )
+    )
   );
 
 -- Documents
@@ -323,6 +383,18 @@ CREATE POLICY "Users can manage their application-document links"
       SELECT 1 FROM applications a
       WHERE a.id = application_documents.application_id
         AND a.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM applications a
+      WHERE a.id = application_documents.application_id
+        AND a.user_id = auth.uid()
+    )
+    AND EXISTS (
+      SELECT 1 FROM documents d
+      WHERE d.id = application_documents.document_id
+        AND d.user_id = auth.uid()
     )
   );
 
@@ -343,7 +415,14 @@ ALTER TABLE status_history ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own status history"
   ON status_history FOR ALL
   USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM applications a
+      WHERE a.id = status_history.application_id
+        AND a.user_id = auth.uid()
+    )
+  );
 
 -- ============================================================
 -- INDEXES for performance
