@@ -1,8 +1,9 @@
 import { supabase } from "../app/lib/supabase";
+import type { Tables } from "../app/lib/database.types";
 import { Company } from "../app/types";
 import { parseSupabaseError } from "./errors";
 
-function rowToCompany(row: any): Company {
+export function rowToCompany(row: Tables<"companies">): Company {
   return {
     id: row.id,
     userId: row.user_id,
@@ -10,8 +11,8 @@ function rowToCompany(row: any): Company {
     website: row.website ?? "",
     industry: row.industry ?? "",
     notes: row.notes ?? "",
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.created_at ?? "",
+    updatedAt: row.updated_at ?? "",
   };
 }
 

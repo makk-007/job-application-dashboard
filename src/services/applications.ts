@@ -1,28 +1,17 @@
 import { supabase } from "../app/lib/supabase";
-import type { TablesUpdate } from "../app/lib/database.types";
+import type { Tables, TablesUpdate } from "../app/lib/database.types";
 import {
   Application,
+  ApplicationSource,
   ApplicationWithCompany,
   ApplicationStatus,
   ChecklistItem,
-  Company,
+  WorkType,
 } from "../app/types";
+import { rowToCompany } from "./companies";
 import { parseSupabaseError } from "./errors";
 
-function rowToCompany(row: any): Company {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    name: row.name,
-    website: row.website ?? "",
-    industry: row.industry ?? "",
-    notes: row.notes ?? "",
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-function rowToApplication(row: any): Application {
+function rowToApplication(row: Tables<"applications">): Application {
   return {
     id: row.id,
     userId: row.user_id,
@@ -32,35 +21,37 @@ function rowToApplication(row: any): Application {
     roleTitle: row.role_title,
     jobPostUrl: row.job_post_url ?? "",
     location: row.location ?? "",
-    source: row.source,
-    workType: row.work_type,
+    source: row.source as ApplicationSource,
+    workType: row.work_type as WorkType,
     relocationRequired: row.relocation_required,
     relocationSponsored: row.relocation_sponsored,
     salaryMin: row.salary_min !== null ? Number(row.salary_min) : null,
     salaryMax: row.salary_max !== null ? Number(row.salary_max) : null,
     currency: row.currency ?? "USD",
-    status: row.status,
+    status: row.status as ApplicationStatus,
     appliedDate: row.applied_date,
     notes: row.notes ?? "",
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.created_at ?? "",
+    updatedAt: row.updated_at ?? "",
   };
 }
 
-function rowToApplicationWithCompany(row: any): ApplicationWithCompany {
+function rowToApplicationWithCompany(
+  row: Tables<"applications"> & { company: Tables<"companies"> },
+): ApplicationWithCompany {
   return {
     ...rowToApplication(row),
     company: rowToCompany(row.company),
   };
 }
 
-function rowToChecklistItem(row: any): ChecklistItem {
+function rowToChecklistItem(row: Tables<"checklist">): ChecklistItem {
   return {
     id: row.id,
     applicationId: row.application_id,
     item: row.item,
-    completed: row.completed,
-    createdAt: row.created_at,
+    completed: row.completed ?? false,
+    createdAt: row.created_at ?? "",
   };
 }
 

@@ -1,9 +1,9 @@
 import { supabase } from "../app/lib/supabase";
-import type { TablesUpdate } from "../app/lib/database.types";
+import type { Tables, TablesUpdate } from "../app/lib/database.types";
 import { Contact, ContactRelationship } from "../app/types";
 import { parseSupabaseError } from "./errors";
 
-function rowToContact(row: any): Contact {
+function rowToContact(row: Tables<"contacts">): Contact {
   return {
     id: row.id,
     userId: row.user_id,
@@ -12,11 +12,11 @@ function rowToContact(row: any): Contact {
     role: row.role ?? "",
     email: row.email ?? "",
     phone: row.phone ?? "",
-    relationship: row.relationship,
+    relationship: row.relationship as ContactRelationship,
     lastContactedAt: row.last_contacted_at,
     notes: row.notes ?? "",
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.created_at ?? "",
+    updatedAt: row.updated_at ?? "",
   };
 }
 
@@ -25,7 +25,9 @@ export interface ContactWithCompany extends Contact {
   companyName: string | null;
 }
 
-function rowToContactWithCompany(row: any): ContactWithCompany {
+function rowToContactWithCompany(
+  row: Tables<"contacts"> & { company: { name: string } | null },
+): ContactWithCompany {
   return {
     ...rowToContact(row),
     companyName: row.company?.name ?? null,
@@ -152,7 +154,7 @@ export interface ApplicationContactLink {
   roleInProcess: string;
 }
 
-function rowToLink(row: any): ApplicationContactLink {
+function rowToLink(row: Tables<"application_contacts">): ApplicationContactLink {
   return {
     id: row.id,
     applicationId: row.application_id,
@@ -171,7 +173,7 @@ export async function getApplicationContacts(
     .eq("application_id", applicationId);
 
   if (error) throw new Error(parseSupabaseError(error));
-  return (data ?? []).map((row: any) => ({
+  return (data ?? []).map((row) => ({
     ...rowToLink(row),
     contact: rowToContactWithCompany(row.contact),
   }));
