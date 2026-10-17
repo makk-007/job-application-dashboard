@@ -1,4 +1,5 @@
 import { supabase } from "../app/lib/supabase";
+import type { TablesUpdate } from "../app/lib/database.types";
 import { JobSearchRound } from "../app/types";
 import { parseSupabaseError } from "./errors";
 
@@ -76,7 +77,7 @@ export async function updateRound(
     endDate: string | null;
   }>,
 ): Promise<JobSearchRound> {
-  const dbUpdates: Record<string, any> = {};
+  const dbUpdates: TablesUpdate<"job_search_rounds"> = {};
   if (updates.name !== undefined) dbUpdates.name = updates.name;
   if (updates.description !== undefined)
     dbUpdates.description = updates.description;

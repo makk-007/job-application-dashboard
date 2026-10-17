@@ -1,4 +1,5 @@
 import { supabase } from "../app/lib/supabase";
+import type { TablesUpdate } from "../app/lib/database.types";
 import { Contact, ContactRelationship } from "../app/types";
 import { parseSupabaseError } from "./errors";
 
@@ -108,7 +109,7 @@ export async function updateContact(
   id: string,
   updates: UpdateContactInput,
 ): Promise<Contact> {
-  const dbUpdates: Record<string, any> = {};
+  const dbUpdates: TablesUpdate<"contacts"> = {};
   if (updates.companyId !== undefined) dbUpdates.company_id = updates.companyId;
   if (updates.name !== undefined) dbUpdates.name = updates.name;
   if (updates.role !== undefined) dbUpdates.role = updates.role;

@@ -1,4 +1,5 @@
 import { supabase } from "../app/lib/supabase";
+import type { TablesUpdate } from "../app/lib/database.types";
 import {
   Application,
   ApplicationWithCompany,
@@ -190,7 +191,7 @@ export async function updateApplication(
   id: string,
   updates: UpdateApplicationInput,
 ): Promise<Application> {
-  const dbUpdates: Record<string, any> = {};
+  const dbUpdates: TablesUpdate<"applications"> = {};
   if (updates.roundId !== undefined) dbUpdates.round_id = updates.roundId;
   if (updates.companyId !== undefined) dbUpdates.company_id = updates.companyId;
   if (updates.contactId !== undefined) dbUpdates.contact_id = updates.contactId;
@@ -343,9 +344,9 @@ export async function getStatusHistory(applicationId: string): Promise<
 
   if (error) throw new Error(parseSupabaseError(error));
   return (data ?? []).map((row) => ({
-    fromStatus: row.from_status,
-    toStatus: row.to_status,
-    changedAt: row.changed_at,
+    fromStatus: row.from_status as ApplicationStatus | null,
+    toStatus: row.to_status as ApplicationStatus,
+    changedAt: row.changed_at ?? "",
   }));
 }
 
