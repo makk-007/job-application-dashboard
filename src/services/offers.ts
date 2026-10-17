@@ -1,4 +1,5 @@
 import { supabase } from "../app/lib/supabase";
+import type { TablesUpdate } from "../app/lib/database.types";
 import { Offer, OfferDecision } from "../app/types";
 import { parseSupabaseError } from "./errors";
 
@@ -119,7 +120,7 @@ export async function updateOffer(
   id: string,
   updates: UpdateOfferInput,
 ): Promise<Offer> {
-  const dbUpdates: Record<string, any> = {};
+  const dbUpdates: TablesUpdate<"offers"> = {};
   if (updates.baseSalary !== undefined)
     dbUpdates.base_salary = updates.baseSalary;
   if (updates.bonus !== undefined) dbUpdates.bonus = updates.bonus;

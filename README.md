@@ -89,7 +89,7 @@ src/
       ui/               Low-level primitives (button, dropdown-menu, etc.)
     context/            React context providers (Auth, Theme, Round, UndoableDelete)
     hooks/              Shared hooks (useEscapeKey, useIsMounted)
-    lib/                Supabase client and generated table types
+    lib/                Supabase client and generated database types
     pages/              One file per route (Dashboard, Applications, Pipeline, etc.)
     utils/              Status config, CSV/JSON export, ICS export, notifications
     routes.tsx          Route definitions
@@ -140,6 +140,14 @@ types defined in src/app/types.ts.
   detection (21+ days with no status change while in Applied or
   Screening). Any script that needs to backdate this column for testing
   purposes must disable the trigger first.
+- `src/app/lib/database.types.ts` is generated from the database schema and
+  gives the Supabase client typed queries. Do not edit it by hand. After any
+  schema change, regenerate it (this needs a Supabase access token, via
+  `npx supabase login`):
+
+  ```bash
+  npx supabase gen types typescript --project-id <your-project-ref> > src/app/lib/database.types.ts
+  ```
 
 ## Browser Notifications
 

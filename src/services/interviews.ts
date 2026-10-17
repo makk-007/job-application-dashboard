@@ -1,4 +1,5 @@
 import { supabase } from "../app/lib/supabase";
+import type { TablesUpdate } from "../app/lib/database.types";
 import { Interview, InterviewRoundType, InterviewOutcome } from "../app/types";
 import { parseSupabaseError } from "./errors";
 
@@ -107,7 +108,7 @@ export async function updateInterview(
   id: string,
   updates: UpdateInterviewInput,
 ): Promise<Interview> {
-  const dbUpdates: Record<string, any> = {};
+  const dbUpdates: TablesUpdate<"interviews"> = {};
   if (updates.roundType !== undefined) dbUpdates.round_type = updates.roundType;
   if (updates.scheduledAt !== undefined)
     dbUpdates.scheduled_at = updates.scheduledAt;
