@@ -1,9 +1,9 @@
 import { supabase } from "../app/lib/supabase";
-import type { TablesUpdate } from "../app/lib/database.types";
+import type { Tables, TablesUpdate } from "../app/lib/database.types";
 import { Offer, OfferDecision } from "../app/types";
 import { parseSupabaseError } from "./errors";
 
-function rowToOffer(row: any): Offer {
+function rowToOffer(row: Tables<"offers">): Offer {
   return {
     id: row.id,
     applicationId: row.application_id,
@@ -14,10 +14,10 @@ function rowToOffer(row: any): Offer {
     benefitsNotes: row.benefits_notes ?? "",
     currency: row.currency ?? "USD",
     decisionDeadline: row.decision_deadline,
-    decision: row.decision,
+    decision: row.decision as OfferDecision,
     notes: row.notes ?? "",
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.created_at ?? "",
+    updatedAt: row.updated_at ?? "",
   };
 }
 
@@ -31,7 +31,16 @@ export interface OfferWithApplication extends Offer {
   };
 }
 
-function rowToOfferWithApplication(row: any): OfferWithApplication {
+function rowToOfferWithApplication(
+  row: Tables<"offers"> & {
+    application: {
+      id: string;
+      role_title: string;
+      work_type: string;
+      company: { name: string } | null;
+    };
+  },
+): OfferWithApplication {
   return {
     ...rowToOffer(row),
     application: {

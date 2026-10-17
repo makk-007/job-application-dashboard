@@ -1,19 +1,19 @@
 import { supabase } from "../app/lib/supabase";
-import type { TablesUpdate } from "../app/lib/database.types";
+import type { Tables, TablesUpdate } from "../app/lib/database.types";
 import { Interview, InterviewRoundType, InterviewOutcome } from "../app/types";
 import { parseSupabaseError } from "./errors";
 
-function rowToInterview(row: any): Interview {
+function rowToInterview(row: Tables<"interviews">): Interview {
   return {
     id: row.id,
     applicationId: row.application_id,
-    roundType: row.round_type,
+    roundType: row.round_type as InterviewRoundType,
     scheduledAt: row.scheduled_at,
     interviewerContactId: row.interviewer_contact_id,
     notes: row.notes ?? "",
-    outcome: row.outcome,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    outcome: row.outcome as InterviewOutcome,
+    createdAt: row.created_at ?? "",
+    updatedAt: row.updated_at ?? "",
   };
 }
 
@@ -27,7 +27,16 @@ export interface InterviewWithContext extends Interview {
   interviewerName: string | null;
 }
 
-function rowToInterviewWithContext(row: any): InterviewWithContext {
+function rowToInterviewWithContext(
+  row: Tables<"interviews"> & {
+    application: {
+      id: string;
+      role_title: string;
+      company: { name: string } | null;
+    };
+    interviewer: { name: string } | null;
+  },
+): InterviewWithContext {
   return {
     ...rowToInterview(row),
     application: {

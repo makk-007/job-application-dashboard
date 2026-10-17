@@ -1,9 +1,9 @@
 import { supabase } from "../app/lib/supabase";
-import type { TablesUpdate } from "../app/lib/database.types";
+import type { Tables, TablesUpdate } from "../app/lib/database.types";
 import { JobSearchRound } from "../app/types";
 import { parseSupabaseError } from "./errors";
 
-function rowToRound(row: any): JobSearchRound {
+function rowToRound(row: Tables<"job_search_rounds">): JobSearchRound {
   return {
     id: row.id,
     userId: row.user_id,
@@ -13,8 +13,8 @@ function rowToRound(row: any): JobSearchRound {
     endDate: row.end_date ?? null,
     isActive: row.is_active ?? false,
     isArchived: row.is_archived ?? false,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.created_at ?? "",
+    updatedAt: row.updated_at ?? "",
   };
 }
 

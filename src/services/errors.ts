@@ -9,7 +9,9 @@
  *
  * PostgreSQL error codes: https://www.postgresql.org/docs/current/errcodes-appendix.html
  */
-export function parseSupabaseError(error: any): string {
+export function parseSupabaseError(
+  error: { code?: string | null; message?: string | null } | null | undefined,
+): string {
   if (!error) return "An unexpected error occurred. Please try again.";
 
   const code: string = error.code ?? "";

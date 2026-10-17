@@ -1,17 +1,17 @@
 import { supabase } from "../app/lib/supabase";
-import type { TablesUpdate } from "../app/lib/database.types";
+import type { Tables, TablesUpdate } from "../app/lib/database.types";
 import { JobDocument, DocumentType } from "../app/types";
 import { parseSupabaseError } from "./errors";
 
-function rowToDocument(row: any): JobDocument {
+function rowToDocument(row: Tables<"documents">): JobDocument {
   return {
     id: row.id,
     userId: row.user_id,
-    type: row.type,
+    type: row.type as DocumentType,
     name: row.name,
     versionLabel: row.version_label ?? "",
     fileUrl: row.file_url ?? "",
-    createdAt: row.created_at,
+    createdAt: row.created_at ?? "",
   };
 }
 
@@ -98,7 +98,7 @@ export interface ApplicationDocumentLink {
   documentId: string;
 }
 
-function rowToLink(row: any): ApplicationDocumentLink {
+function rowToLink(row: Tables<"application_documents">): ApplicationDocumentLink {
   return {
     id: row.id,
     applicationId: row.application_id,
@@ -116,7 +116,7 @@ export async function getApplicationDocuments(
     .eq("application_id", applicationId);
 
   if (error) throw new Error(parseSupabaseError(error));
-  return (data ?? []).map((row: any) => ({
+  return (data ?? []).map((row) => ({
     ...rowToLink(row),
     document: rowToDocument(row.document),
   }));
