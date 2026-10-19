@@ -49,7 +49,8 @@ export function buildInterviewsICS(interviews: InterviewWithContext[]): string {
         : null,
       interview.notes ? `Notes: ${interview.notes}` : null,
     ].filter(Boolean);
-    const description = escapeICSText(descriptionParts.join("\\n"));
+    // Join with a real newline: escapeICSText turns it into the ICS "\\n" sequence.
+    const description = escapeICSText(descriptionParts.join("\n"));
 
     const start = formatICSDate(interview.scheduledAt);
     // Default to a 1-hour block since interviews.scheduled_at stores only a start time.

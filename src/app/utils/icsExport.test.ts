@@ -52,6 +52,29 @@ describe("buildInterviewsICS", () => {
     expect(lines).toContain("SUMMARY:Technical Interview - Dev\\; Ops at Acme\\, Inc.");
   });
 
+  it("separates description lines with escaped newlines", () => {
+    const lines = linesOf(
+      buildInterviewsICS([makeInterview({ interviewerName: "Bo", notes: "Bring a laptop" })]),
+    );
+    expect(lines).toContain(
+      "DESCRIPTION:Role: Frontend Engineer\\nCompany: Acme\\nInterviewer: Bo\\nNotes: Bring a laptop",
+    );
+  });
+
+  it("escapes commas and line breaks inside description values", () => {
+    const lines = linesOf(
+      buildInterviewsICS([
+        makeInterview({
+          application: { id: "app-1", roleTitle: "Frontend Engineer", companyName: "Acme, Inc." },
+          notes: "line one\nline two",
+        }),
+      ]),
+    );
+    expect(lines).toContain(
+      "DESCRIPTION:Role: Frontend Engineer\\nCompany: Acme\\, Inc.\\nNotes: line one\\nline two",
+    );
+  });
+
   it("falls back to a generic label for unknown round types", () => {
     const ics = buildInterviewsICS([makeInterview({ roundType: "mystery" as never })]);
     expect(ics).toContain("SUMMARY:Interview - Frontend Engineer at Acme");
