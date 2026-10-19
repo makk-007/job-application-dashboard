@@ -1,11 +1,31 @@
 # Job Application Tracker
 
+[![CI](https://github.com/makk-007/job-application-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/makk-007/job-application-dashboard/actions/workflows/ci.yml)
+
 A dedicated tool for tracking a job search end to end: leads, applications,
 interviews, offers, contacts, and documents, all in one place.
 
 Built as a standalone project using a University Application Tracker as a
 design and architecture reference, then adapted and extended for the
 job-search workflow specifically.
+
+## Screenshots
+
+**Dashboard**
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+**Pipeline**
+
+![Pipeline](docs/screenshots/pipeline.png)
+
+**Applications**
+
+![Applications](docs/screenshots/applications.png)
+
+**Offers**
+
+![Offers](docs/screenshots/offers.png)
 
 ## Features
 
@@ -79,6 +99,7 @@ full JSON backup of everything from Settings.
 - **UI:** Radix-based primitives, Framer Motion (motion/react), Sonner toasts, Lucide icons
 - **Charts:** Recharts
 - **Routing:** React Router v7
+- **Testing and CI:** Vitest, GitHub Actions (typecheck, tests, and build on every push to main and on pull requests)
 
 ## Project Structure
 
@@ -86,18 +107,22 @@ full JSON backup of everything from Settings.
 src/
   app/
     components/        Shared UI components (Layout, modals, badges, etc.)
+      applications/     Add Application modal and Application Detail Drawer
       ui/               Low-level primitives (button, dropdown-menu, etc.)
     context/            React context providers (Auth, Theme, Round, UndoableDelete)
     hooks/              Shared hooks (useEscapeKey, useIsMounted)
     lib/                Supabase client and generated database types
     pages/              One file per route (Dashboard, Applications, Pipeline, etc.)
-    utils/              Status config, CSV/JSON export, ICS export, notifications
+    utils/              Status config, option lists, formatters, CSV/JSON export, ICS export, notifications
     routes.tsx          Route definitions
     App.tsx             Provider tree and app shell
   services/             Typed Supabase data-access layer, one file per entity
   styles/               Tailwind entrypoint, theme tokens, fonts
 supabase/
   schema.sql            Full database schema, RLS policies, triggers, indexes
+  migrations/           Incremental changes for databases created before them
+.github/workflows/      CI (typecheck, tests, build)
+vitest.config.ts        Unit test configuration (tests live next to the code as *.test.ts)
 ```
 
 Each entity (applications, contacts, interviews, offers, documents,
@@ -107,6 +132,8 @@ mapping between the database's snake_case columns and the app's camelCase
 types defined in src/app/types.ts.
 
 ## Setup
+
+Requires Node.js 22 or newer.
 
 1. Create a Supabase project if you do not already have one.
 2. Copy .env.example to .env and fill in your project's URL and anon key:
@@ -127,10 +154,32 @@ types defined in src/app/types.ts.
    npm run build
    ```
 
+## Development
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run typecheck` | Type-check the whole project |
+| `npm test` | Run the unit tests (Vitest) |
+| `npm run build` | Production build |
+
+The unit tests cover the pure logic: stale-application detection, offer total
+compensation, ICS and CSV export, salary and date formatting, and Supabase
+error mapping. CI runs typecheck, tests, and build on every push to main and
+on pull requests.
+
 ## Database Notes
 
 - All tables are scoped per-user via Row Level Security; no user can read
   or write another user's data.
+- Rows can only link to rows owned by the same user. For example, an
+  application can only reference your own companies, contacts, and rounds.
+  This is enforced by Row Level Security `WITH CHECK` policies in the
+  database, not only by the UI.
+- schema.sql is complete for new databases. A database created earlier
+  should also run any files in supabase/migrations/ it has not applied yet,
+  in this order: add_application_location.sql, add_declined_status.sql,
+  harden_rls_linked_ownership.sql. Each is safe to re-run.
 - Deleting an application cascades to its checklist items, interviews,
   offers, status history, and document/contact links, but does not delete
   the underlying contact or document records themselves, since those are
