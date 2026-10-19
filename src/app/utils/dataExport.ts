@@ -4,7 +4,7 @@ import { InterviewWithContext } from "../../services/interviews";
 import { OfferWithApplication } from "../../services/offers";
 import { JobDocument } from "../types";
 
-function toCSVValue(value: unknown): string {
+export function toCSVValue(value: unknown): string {
   if (value === null || value === undefined) return "";
   const str = String(value);
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
@@ -13,7 +13,7 @@ function toCSVValue(value: unknown): string {
   return str;
 }
 
-function buildCSV(headers: string[], rows: unknown[][]): string {
+export function buildCSV(headers: string[], rows: unknown[][]): string {
   const lines = [headers.map(toCSVValue).join(",")];
   for (const row of rows) {
     lines.push(row.map(toCSVValue).join(","));
