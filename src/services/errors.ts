@@ -75,10 +75,9 @@ export function parseSupabaseError(
   }
 
   // Row-level security / permission denied
-  // PostgreSQL code 42501 = insufficient_privilege; PostgREST PGRST116
+  // PostgreSQL code 42501 = insufficient_privilege
   if (
     code === "42501" ||
-    code === "PGRST116" ||
     message.includes("permission denied") ||
     message.includes("policy")
   ) {

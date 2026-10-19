@@ -20,6 +20,20 @@ describe("parseSupabaseError", () => {
     expect(parseSupabaseError({ code: "42501" })).toMatch(/do not have permission/);
   });
 
+  it("reports a missing row as not found, not as a permission problem", () => {
+    const result = parseSupabaseError({
+      code: "PGRST116",
+      message: "JSON object requested, multiple (or no) rows returned",
+    });
+    expect(result).toBe("The item could not be found. It may have been deleted.");
+  });
+
+  it("still reports permission failures by message", () => {
+    expect(parseSupabaseError({ message: "permission denied for table applications" })).toMatch(
+      /do not have permission/,
+    );
+  });
+
   it("explains check constraint failures by field", () => {
     expect(
       parseSupabaseError({
