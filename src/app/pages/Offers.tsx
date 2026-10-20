@@ -33,7 +33,7 @@ import { useUndoableDelete } from "../context/UndoableDeleteContext";
 import { useCurrencies } from "../context/CurrencyContext";
 import { useIsMounted } from "../hooks/useIsMounted";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
-import { MarkDeclinedModal } from "../components/MarkDeclinedModal";
+import { ConfirmStatusChangeModal } from "../components/ConfirmStatusChangeModal";
 import { Skeleton } from "../components/ui/skeleton";
 import {
   inputCls,
@@ -369,9 +369,11 @@ export function Offers() {
     null,
   );
   const [savingDecisionId, setSavingDecisionId] = useState<string | null>(null);
-  const [declinePromptOffer, setDeclinePromptOffer] =
-    useState<OfferWithApplication | null>(null);
-  const [markingDeclined, setMarkingDeclined] = useState(false);
+  const [statusPrompt, setStatusPrompt] = useState<{
+    offer: OfferWithApplication;
+    target: "declined" | "offer";
+  } | null>(null);
+  const [savingStatus, setSavingStatus] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -429,13 +431,16 @@ export function Offers() {
         description: `${offer.application.roleTitle}: ${decisionConfig[decision].label}`,
       });
 
-      // Offer declined: offer to move the application to Declined as well,
-      // unless it has already been moved there.
+      // Keep the application status in step with the offer decision:
+      // declining offers to move it to Declined; undoing a decline offers
+      // to move it back to Offer.
+      const linkedApp = applications.find((a) => a.id === offer.applicationId);
       if (decision === "declined") {
-        const linkedApp = applications.find((a) => a.id === offer.applicationId);
         if (linkedApp && linkedApp.status !== "declined") {
-          setDeclinePromptOffer(offer);
+          setStatusPrompt({ offer, target: "declined" });
         }
+      } else if (linkedApp?.status === "declined") {
+        setStatusPrompt({ offer, target: "offer" });
       }
     } catch (e: any) {
       toast.error("Failed to update decision", { description: e.message });
@@ -444,30 +449,33 @@ export function Offers() {
     }
   };
 
-  const handleConfirmMarkDeclined = async () => {
-    const offer = declinePromptOffer;
-    if (!offer) return;
-    setMarkingDeclined(true);
+  const handleConfirmStatusChange = async () => {
+    if (!statusPrompt) return;
+    const { offer, target } = statusPrompt;
+    setSavingStatus(true);
     try {
-      await updateApplication(offer.applicationId, { status: "declined" });
+      await updateApplication(offer.applicationId, { status: target });
       if (isMounted()) {
         setApplications((prev) =>
           prev.map((a) =>
-            a.id === offer.applicationId ? { ...a, status: "declined" } : a,
+            a.id === offer.applicationId ? { ...a, status: target } : a,
           ),
         );
       }
-      toast.success("Application marked as Declined", {
-        description: offer.application.roleTitle,
-      });
+      toast.success(
+        target === "declined"
+          ? "Application marked as Declined"
+          : "Application moved back to Offer",
+        { description: offer.application.roleTitle },
+      );
     } catch (e: any) {
       toast.error("Failed to update application status", {
         description: e.message,
       });
     } finally {
       if (isMounted()) {
-        setMarkingDeclined(false);
-        setDeclinePromptOffer(null);
+        setSavingStatus(false);
+        setStatusPrompt(null);
       }
     }
   };
@@ -712,13 +720,39 @@ export function Offers() {
         )}
       </AnimatePresence>
 
-      {declinePromptOffer && (
-        <MarkDeclinedModal
-          applicationLabel={`${declinePromptOffer.application.roleTitle} at ${declinePromptOffer.application.companyName}`}
-          saving={markingDeclined}
-          onConfirm={handleConfirmMarkDeclined}
-          onCancel={() => setDeclinePromptOffer(null)}
-        />
+      {statusPrompt && (
+        <ConfirmStatusChangeModal
+          tone={statusPrompt.target}
+          title={
+            statusPrompt.target === "declined"
+              ? "Mark application as Declined?"
+              : "Move application back to Offer?"
+          }
+          confirmLabel={
+            statusPrompt.target === "declined"
+              ? "Mark as Declined"
+              : "Move to Offer"
+          }
+          cancelLabel={
+            statusPrompt.target === "declined"
+              ? "Keep as Offer"
+              : "Keep as Declined"
+          }
+          saving={savingStatus}
+          onConfirm={handleConfirmStatusChange}
+          onCancel={() => setStatusPrompt(null)}
+        >
+          {statusPrompt.target === "declined"
+            ? "You declined the offer for "
+            : "You changed the decision on the offer for "}
+          <span className="font-medium text-foreground">
+            {statusPrompt.offer.application.roleTitle} at{" "}
+            {statusPrompt.offer.application.companyName}
+          </span>
+          {statusPrompt.target === "declined"
+            ? ". Move the application to Declined too?"
+            : ". Move the application back to Offer?"}
+        </ConfirmStatusChangeModal>
       )}
 
       {deleteTarget && (
