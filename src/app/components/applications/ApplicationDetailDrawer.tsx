@@ -1034,7 +1034,7 @@ export function ApplicationDetailDrawer({
             )}
           </div>
 
-          {app.status === "offer" && (
+          {(app.status === "offer" || (app.status === "declined" && offer)) && (
             <div>
               <label className="text-sm font-medium text-foreground mb-3 block">
                 Offer
