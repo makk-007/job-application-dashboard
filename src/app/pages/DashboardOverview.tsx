@@ -395,6 +395,7 @@ export function DashboardOverview() {
                   data={funnelData}
                   layout="vertical"
                   margin={{ left: 16 }}
+                  accessibilityLayer={false}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
