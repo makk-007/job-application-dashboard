@@ -40,6 +40,7 @@ import {
   selectCls,
   textareaCls,
 } from "../components/ui/input-classes";
+import { getErrorMessage } from "../utils/errorMessage";
 
 const DECISIONS: OfferDecision[] = ["pending", "accepted", "declined"];
 
@@ -139,9 +140,9 @@ function AddOfferModal({
       toast.success("Offer added");
       onSaved();
       onClose();
-    } catch (e: any) {
-      setError(e.message);
-      toast.error("Failed to add offer", { description: e.message });
+    } catch (e) {
+      setError(getErrorMessage(e));
+      toast.error("Failed to add offer", { description: getErrorMessage(e) });
     } finally {
       setSaving(false);
     }
@@ -387,10 +388,12 @@ export function Offers() {
         setOffers(offersData);
         setApplications(applicationsData);
       }
-    } catch (e: any) {
+    } catch (e) {
       if (isMounted()) {
-        setError(e.message);
-        toast.error("Failed to load offers", { description: e.message });
+        setError(getErrorMessage(e));
+        toast.error("Failed to load offers", {
+          description: getErrorMessage(e),
+        });
       }
     } finally {
       if (isMounted()) setLoading(false);
@@ -442,8 +445,10 @@ export function Offers() {
       } else if (linkedApp?.status === "declined") {
         setStatusPrompt({ offer, target: "offer" });
       }
-    } catch (e: any) {
-      toast.error("Failed to update decision", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to update decision", {
+        description: getErrorMessage(e),
+      });
     } finally {
       setSavingDecisionId(null);
     }
@@ -468,9 +473,9 @@ export function Offers() {
           : "Application moved back to Offer",
         { description: offer.application.roleTitle },
       );
-    } catch (e: any) {
+    } catch (e) {
       toast.error("Failed to update application status", {
-        description: e.message,
+        description: getErrorMessage(e),
       });
     } finally {
       if (isMounted()) {
@@ -493,7 +498,9 @@ export function Offers() {
       },
       performDelete: () => deleteOffer(offer.id),
       onDeleteFailed: (e) =>
-        toast.error("Failed to delete offer", { description: e.message }),
+        toast.error("Failed to delete offer", {
+          description: getErrorMessage(e),
+        }),
     });
   };
 

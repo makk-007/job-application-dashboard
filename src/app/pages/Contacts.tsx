@@ -40,6 +40,7 @@ import {
   selectCls,
   textareaCls,
 } from "../components/ui/input-classes";
+import { getErrorMessage } from "../utils/errorMessage";
 
 const RELATIONSHIPS: ContactRelationship[] = [
   "recruiter",
@@ -141,12 +142,12 @@ function ContactModal({
       }
       onSaved();
       onClose();
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(getErrorMessage(e));
       toast.error(
         isEdit ? "Failed to update contact" : "Failed to add contact",
         {
-          description: e.message,
+          description: getErrorMessage(e),
         },
       );
     } finally {
@@ -356,10 +357,12 @@ export function Contacts() {
         setContacts(contactsData);
         setCompanies(companiesData);
       }
-    } catch (e: any) {
+    } catch (e) {
       if (isMounted()) {
-        setError(e.message);
-        toast.error("Failed to load contacts", { description: e.message });
+        setError(getErrorMessage(e));
+        toast.error("Failed to load contacts", {
+          description: getErrorMessage(e),
+        });
       }
     } finally {
       if (isMounted()) setLoading(false);
@@ -403,8 +406,10 @@ export function Contacts() {
         ),
       );
       toast.success("Marked as contacted today", { description: contact.name });
-    } catch (e: any) {
-      toast.error("Failed to update contact", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to update contact", {
+        description: getErrorMessage(e),
+      });
     }
   };
 
@@ -421,7 +426,9 @@ export function Contacts() {
       },
       performDelete: () => deleteContact(contact.id),
       onDeleteFailed: (e) =>
-        toast.error("Failed to delete contact", { description: e.message }),
+        toast.error("Failed to delete contact", {
+          description: getErrorMessage(e),
+        }),
     });
   };
 

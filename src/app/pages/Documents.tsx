@@ -26,6 +26,7 @@ import { useIsMounted } from "../hooks/useIsMounted";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { Skeleton } from "../components/ui/skeleton";
 import { inputCls, selectCls } from "../components/ui/input-classes";
+import { getErrorMessage } from "../utils/errorMessage";
 
 const DOCUMENT_TYPES: DocumentType[] = [
   "resume",
@@ -108,12 +109,12 @@ function DocumentModal({
       }
       onSaved();
       onClose();
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(getErrorMessage(e));
       toast.error(
         isEdit ? "Failed to update document" : "Failed to add document",
         {
-          description: e.message,
+          description: getErrorMessage(e),
         },
       );
     } finally {
@@ -268,10 +269,12 @@ export function Documents() {
           Object.fromEntries(docs.map((d, i) => [d.id, counts[i]])),
         );
       }
-    } catch (e: any) {
+    } catch (e) {
       if (isMounted()) {
-        setError(e.message);
-        toast.error("Failed to load documents", { description: e.message });
+        setError(getErrorMessage(e));
+        toast.error("Failed to load documents", {
+          description: getErrorMessage(e),
+        });
       }
     } finally {
       if (isMounted()) setLoading(false);
@@ -309,7 +312,9 @@ export function Documents() {
       },
       performDelete: () => deleteDocument(doc.id),
       onDeleteFailed: (e) =>
-        toast.error("Failed to delete document", { description: e.message }),
+        toast.error("Failed to delete document", {
+          description: getErrorMessage(e),
+        }),
     });
   };
 

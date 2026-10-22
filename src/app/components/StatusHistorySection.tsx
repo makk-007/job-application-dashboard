@@ -2,6 +2,7 @@ import { useState } from "react";
 import { History, ChevronDown, Loader2, AlertCircle } from "lucide-react";
 import { ApplicationStatus } from "../types";
 import { statusConfig } from "../utils/statusConfig";
+import { getErrorMessage } from "../utils/errorMessage";
 
 interface HistoryEntry {
   fromStatus: ApplicationStatus | null;
@@ -48,8 +49,8 @@ export function StatusHistorySection({
         const data = await fetchHistory();
         setEntries(data);
         setLoaded(true);
-      } catch (e: any) {
-        setError(e.message);
+      } catch (e) {
+        setError(getErrorMessage(e));
       } finally {
         setLoading(false);
       }

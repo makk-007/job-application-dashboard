@@ -17,6 +17,7 @@ import { useRound } from "../context/RoundContext";
 import { useIsMounted } from "../hooks/useIsMounted";
 import { Skeleton } from "../components/ui/skeleton";
 import { statusConfig, ALL_STATUSES, isStale } from "../utils/statusConfig";
+import { getErrorMessage } from "../utils/errorMessage";
 
 function formatSalary(
   min: number | null,
@@ -109,10 +110,12 @@ export function Pipeline() {
     try {
       const data = await getApplications(selectedRoundId ?? undefined);
       if (isMounted()) setApplications(data);
-    } catch (e: any) {
+    } catch (e) {
       if (isMounted()) {
-        setError(e.message);
-        toast.error("Failed to load pipeline", { description: e.message });
+        setError(getErrorMessage(e));
+        toast.error("Failed to load pipeline", {
+          description: getErrorMessage(e),
+        });
       }
     } finally {
       if (isMounted()) setLoading(false);
@@ -166,11 +169,13 @@ export function Pipeline() {
       toast.success("Status updated", {
         description: `${app.roleTitle} moved to ${statusConfig[status].label}`,
       });
-    } catch (e: any) {
+    } catch (e) {
       setApplications((prev) =>
         prev.map((a) => (a.id === id ? { ...a, status: previousStatus } : a)),
       );
-      toast.error("Failed to update status", { description: e.message });
+      toast.error("Failed to update status", {
+        description: getErrorMessage(e),
+      });
     } finally {
       setUpdatingId(null);
     }

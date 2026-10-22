@@ -39,6 +39,7 @@ import { getContacts } from "../../services/contacts";
 import { getInterviews } from "../../services/interviews";
 import { getOffers } from "../../services/offers";
 import { getDocuments } from "../../services/documents";
+import { getErrorMessage } from "../utils/errorMessage";
 
 function AddRoundModal({
   onClose,
@@ -69,9 +70,11 @@ function AddRoundModal({
       await onCreate({ name: name.trim(), description, isActive: makeActive });
       toast.success("Search round created", { description: name.trim() });
       onClose();
-    } catch (e: any) {
-      setError(e.message);
-      toast.error("Failed to create search round", { description: e.message });
+    } catch (e) {
+      setError(getErrorMessage(e));
+      toast.error("Failed to create search round", {
+        description: getErrorMessage(e),
+      });
     } finally {
       setSaving(false);
     }
@@ -240,8 +243,8 @@ export function Settings() {
         exportDocumentsCSV(await getDocuments());
       }
       toast.success("Export downloaded");
-    } catch (e: any) {
-      toast.error("Failed to export data", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to export data", { description: getErrorMessage(e) });
     } finally {
       setExportingType(null);
     }
@@ -260,8 +263,8 @@ export function Settings() {
         ]);
       exportFullJSON({ applications, contacts, interviews, offers, documents });
       toast.success("Full backup downloaded");
-    } catch (e: any) {
-      toast.error("Failed to export data", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to export data", { description: getErrorMessage(e) });
     } finally {
       setExportingType(null);
     }
@@ -599,9 +602,9 @@ export function Settings() {
             try {
               await deleteRound(deleteTarget.id);
               toast.success("Search round deleted");
-            } catch (e: any) {
+            } catch (e) {
               toast.error("Failed to delete search round", {
-                description: e.message,
+                description: getErrorMessage(e),
               });
             } finally {
               setDeleteTarget(null);
