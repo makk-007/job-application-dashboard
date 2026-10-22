@@ -1,0 +1,38 @@
+version: 2
+
+updates:
+  # npm packages: one grouped PR a week for minor and patch updates.
+  # Major versions get their own PR so a risky bump never hides in a routine one.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    # Wait two weeks after a release before proposing it (version updates only;
+    # security updates are never delayed).
+    cooldown:
+      default-days: 14
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      npm-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Actions used in .github/workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 14
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "ci"
