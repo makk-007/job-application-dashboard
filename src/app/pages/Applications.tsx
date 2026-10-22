@@ -28,14 +28,11 @@ import { BulkDeleteConfirmModal } from "../components/BulkDeleteConfirmModal";
 import { Skeleton } from "../components/ui/skeleton";
 import { inputCls, selectCls } from "../components/ui/input-classes";
 import { statusConfig, ALL_STATUSES, isStale } from "../utils/statusConfig";
-import {
-  AddApplicationModal,
-} from "../components/applications/AddApplicationModal";
+import { AddApplicationModal } from "../components/applications/AddApplicationModal";
 import { formatSalary } from "../utils/formatters";
 import { WORK_TYPES } from "../utils/applicationOptions";
-import {
-  ApplicationDetailDrawer,
-} from "../components/applications/ApplicationDetailDrawer";
+import { ApplicationDetailDrawer } from "../components/applications/ApplicationDetailDrawer";
+import { getErrorMessage } from "../utils/errorMessage";
 
 // ── Main Applications Page ──────────────────────────────────────────────────
 
@@ -84,10 +81,12 @@ export function Applications() {
       // selectedRoundId of null means "All Rounds", so omit the filter
       const data = await getApplications(selectedRoundId ?? undefined);
       if (isMounted()) setApplications(data);
-    } catch (e: any) {
+    } catch (e) {
       if (isMounted()) {
-        setError(e.message);
-        toast.error("Failed to load applications", { description: e.message });
+        setError(getErrorMessage(e));
+        toast.error("Failed to load applications", {
+          description: getErrorMessage(e),
+        });
       }
     } finally {
       if (isMounted()) setLoading(false);
@@ -199,7 +198,7 @@ export function Applications() {
       performDelete: () => deleteApplication(id),
       onDeleteFailed: (e) =>
         toast.error("Failed to delete application", {
-          description: e.message,
+          description: getErrorMessage(e),
         }),
     });
   };
@@ -240,9 +239,9 @@ export function Applications() {
       setShowBulkDelete(false);
       if (selectedApp && succeededIds.includes(selectedApp.id))
         setSelectedApp(null);
-    } catch (e: any) {
+    } catch (e) {
       toast.error("Failed to delete selected applications", {
-        description: e.message,
+        description: getErrorMessage(e),
       });
     } finally {
       setBulkDeleting(false);

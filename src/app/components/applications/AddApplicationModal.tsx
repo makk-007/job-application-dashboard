@@ -9,6 +9,7 @@ import { useCurrencies } from "../../context/CurrencyContext";
 import { inputCls, selectCls, textareaCls } from "../ui/input-classes";
 import { statusConfig, ALL_STATUSES } from "../../utils/statusConfig";
 import { SOURCES, WORK_TYPES } from "../../utils/applicationOptions";
+import { getErrorMessage } from "../../utils/errorMessage";
 
 export function AddApplicationModal({
   activeRoundId,
@@ -101,9 +102,11 @@ export function AddApplicationModal({
       });
       onSaved();
       onClose();
-    } catch (e: any) {
-      setError(e.message);
-      toast.error("Failed to add application", { description: e.message });
+    } catch (e) {
+      setError(getErrorMessage(e));
+      toast.error("Failed to add application", {
+        description: getErrorMessage(e),
+      });
     } finally {
       setSaving(false);
     }

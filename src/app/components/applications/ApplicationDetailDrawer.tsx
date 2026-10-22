@@ -86,6 +86,7 @@ import {
   interviewOutcomeConfig,
   DOCUMENT_TYPE_LABEL,
 } from "../../utils/applicationOptions";
+import { getErrorMessage } from "../../utils/errorMessage";
 
 export function ApplicationDetailDrawer({
   application,
@@ -195,16 +196,20 @@ export function ApplicationDetailDrawer({
   const loadChecklist = async () => {
     try {
       setChecklist(await getChecklistItems(application.id));
-    } catch (e: any) {
-      toast.error("Failed to load checklist", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to load checklist", {
+        description: getErrorMessage(e),
+      });
     }
   };
 
   const loadInterviews = async () => {
     try {
       setInterviews(await getApplicationInterviews(application.id));
-    } catch (e: any) {
-      toast.error("Failed to load interviews", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to load interviews", {
+        description: getErrorMessage(e),
+      });
     }
   };
 
@@ -242,8 +247,10 @@ export function ApplicationDetailDrawer({
       resetInterviewForm();
       setShowAddInterview(false);
       await loadInterviews();
-    } catch (e: any) {
-      toast.error("Failed to save interview", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to save interview", {
+        description: getErrorMessage(e),
+      });
     } finally {
       setSavingInterview(false);
     }
@@ -268,8 +275,10 @@ export function ApplicationDetailDrawer({
       await deleteInterview(id);
       setInterviews((prev) => prev.filter((i) => i.id !== id));
       toast.success("Interview removed");
-    } catch (e: any) {
-      toast.error("Failed to remove interview", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to remove interview", {
+        description: getErrorMessage(e),
+      });
     }
   };
 
@@ -281,16 +290,18 @@ export function ApplicationDetailDrawer({
       ]);
       setLinkedDocuments(links.map((l) => ({ ...l.document, linkId: l.id })));
       setAllDocuments(all);
-    } catch (e: any) {
-      toast.error("Failed to load documents", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to load documents", {
+        description: getErrorMessage(e),
+      });
     }
   };
 
   const loadOffer = async () => {
     try {
       setOffer(await getApplicationOffer(application.id));
-    } catch (e: any) {
-      toast.error("Failed to load offer", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to load offer", { description: getErrorMessage(e) });
     }
   };
 
@@ -303,8 +314,10 @@ export function ApplicationDetailDrawer({
       toast.success("Document linked", { description: doc?.name });
       setDocumentToAdd("");
       await loadDocuments();
-    } catch (e: any) {
-      toast.error("Failed to link document", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to link document", {
+        description: getErrorMessage(e),
+      });
     } finally {
       setLinkingDocument(false);
     }
@@ -315,8 +328,10 @@ export function ApplicationDetailDrawer({
       await unlinkDocumentFromApplication(linkId);
       setLinkedDocuments((prev) => prev.filter((d) => d.linkId !== linkId));
       toast.success("Document unlinked", { description: name });
-    } catch (e: any) {
-      toast.error("Failed to unlink document", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to unlink document", {
+        description: getErrorMessage(e),
+      });
     }
   };
 
@@ -334,8 +349,10 @@ export function ApplicationDetailDrawer({
         })),
       );
       setAllContacts(all);
-    } catch (e: any) {
-      toast.error("Failed to load contacts", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to load contacts", {
+        description: getErrorMessage(e),
+      });
     }
   };
 
@@ -350,8 +367,10 @@ export function ApplicationDetailDrawer({
       });
       setContactToAdd("");
       await loadContacts();
-    } catch (e: any) {
-      toast.error("Failed to link contact", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to link contact", {
+        description: getErrorMessage(e),
+      });
     } finally {
       setLinkingContact(false);
     }
@@ -362,8 +381,10 @@ export function ApplicationDetailDrawer({
       await unlinkContactFromApplication(linkId);
       setLinkedContacts((prev) => prev.filter((c) => c.linkId !== linkId));
       toast.success("Contact unlinked", { description: name });
-    } catch (e: any) {
-      toast.error("Failed to unlink contact", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to unlink contact", {
+        description: getErrorMessage(e),
+      });
     }
   };
 
@@ -377,8 +398,8 @@ export function ApplicationDetailDrawer({
       toast.success("Saved", {
         description: `${field.replace(/([A-Z])/g, " $1").trim()} updated`,
       });
-    } catch (e: any) {
-      toast.error("Failed to save", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to save", { description: getErrorMessage(e) });
     } finally {
       setSavingField(null);
     }
@@ -398,8 +419,10 @@ export function ApplicationDetailDrawer({
       toast.success("Status updated", {
         description: statusConfig[status].label,
       });
-    } catch (e: any) {
-      toast.error("Failed to update status", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to update status", {
+        description: getErrorMessage(e),
+      });
     } finally {
       setSavingStatus(false);
     }
@@ -415,8 +438,10 @@ export function ApplicationDetailDrawer({
         const updated = { ...app, notes: val };
         setApp(updated);
         onUpdated(updated);
-      } catch (e: any) {
-        toast.error("Failed to save notes", { description: e.message });
+      } catch (e) {
+        toast.error("Failed to save notes", {
+          description: getErrorMessage(e),
+        });
       } finally {
         setSavingNotes(false);
       }
@@ -430,8 +455,10 @@ export function ApplicationDetailDrawer({
       setChecklist((prev) =>
         prev.map((c) => (c.id === itemId ? { ...c, completed: checked } : c)),
       );
-    } catch (e: any) {
-      toast.error("Failed to update checklist", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to update checklist", {
+        description: getErrorMessage(e),
+      });
     }
   };
 
@@ -442,8 +469,10 @@ export function ApplicationDetailDrawer({
       setChecklist((prev) => [...prev, item]);
       setNewCheckItem("");
       toast.success("Checklist item added");
-    } catch (e: any) {
-      toast.error("Failed to add checklist item", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to add checklist item", {
+        description: getErrorMessage(e),
+      });
     }
   };
 
@@ -465,7 +494,7 @@ export function ApplicationDetailDrawer({
       performDelete: () => deleteChecklistItem(itemId),
       onDeleteFailed: (e) =>
         toast.error("Failed to remove checklist item", {
-          description: e.message,
+          description: getErrorMessage(e),
         }),
     });
   };
@@ -478,9 +507,9 @@ export function ApplicationDetailDrawer({
       });
       const full = await getApplication(duplicate.id);
       onDuplicated(full);
-    } catch (e: any) {
+    } catch (e) {
       toast.error("Failed to duplicate application", {
-        description: e.message,
+        description: getErrorMessage(e),
       });
     }
   };

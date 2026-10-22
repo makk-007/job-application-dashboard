@@ -37,6 +37,7 @@ import {
   selectCls,
   textareaCls,
 } from "../components/ui/input-classes";
+import { getErrorMessage } from "../utils/errorMessage";
 
 const ROUND_TYPES: InterviewRoundType[] = [
   "phone_screen",
@@ -191,12 +192,12 @@ function InterviewModal({
       }
       onSaved();
       onClose();
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(getErrorMessage(e));
       toast.error(
         isEdit ? "Failed to update interview" : "Failed to schedule interview",
         {
-          description: e.message,
+          description: getErrorMessage(e),
         },
       );
     } finally {
@@ -388,10 +389,12 @@ export function Interviews() {
         setApplications(applicationsData);
         setContacts(contactsData);
       }
-    } catch (e: any) {
+    } catch (e) {
       if (isMounted()) {
-        setError(e.message);
-        toast.error("Failed to load interviews", { description: e.message });
+        setError(getErrorMessage(e));
+        toast.error("Failed to load interviews", {
+          description: getErrorMessage(e),
+        });
       }
     } finally {
       if (isMounted()) setLoading(false);
@@ -433,7 +436,9 @@ export function Interviews() {
       },
       performDelete: () => deleteInterview(interview.id),
       onDeleteFailed: (e) =>
-        toast.error("Failed to delete interview", { description: e.message }),
+        toast.error("Failed to delete interview", {
+          description: getErrorMessage(e),
+        }),
     });
   };
 

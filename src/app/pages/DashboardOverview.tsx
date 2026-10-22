@@ -47,6 +47,7 @@ import {
   PIPELINE_STATUSES,
   isStale,
 } from "../utils/statusConfig";
+import { getErrorMessage } from "../utils/errorMessage";
 
 export function DashboardOverview() {
   const { selectedRoundId, rounds, loading: roundsLoading } = useRound();
@@ -73,10 +74,12 @@ export function DashboardOverview() {
         setContacts(contactsData);
         setInterviews(interviewsData);
       }
-    } catch (e: any) {
+    } catch (e) {
       if (isMounted()) {
-        setError(e.message);
-        toast.error("Failed to load dashboard", { description: e.message });
+        setError(getErrorMessage(e));
+        toast.error("Failed to load dashboard", {
+          description: getErrorMessage(e),
+        });
       }
     } finally {
       if (isMounted()) setLoading(false);
@@ -177,8 +180,10 @@ export function DashboardOverview() {
         ),
       );
       toast.success("Marked as contacted today", { description: contact.name });
-    } catch (e: any) {
-      toast.error("Failed to update contact", { description: e.message });
+    } catch (e) {
+      toast.error("Failed to update contact", {
+        description: getErrorMessage(e),
+      });
     }
   };
 
