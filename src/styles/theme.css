@@ -257,9 +257,9 @@
     font-family: var(--font-sans);
   }
 
-  /* Native checkboxes use the theme color (the checkmark contrast is automatic). */
+  /* Native checkboxes use the brand color (the checkmark contrast is automatic). */
   input[type="checkbox"] {
-    accent-color: var(--primary);
+    accent-color: var(--brand-600);
   }
 
   html {
