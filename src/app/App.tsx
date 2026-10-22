@@ -19,7 +19,7 @@ export default function App() {
               <UndoableDeleteProvider>
                 <NotificationScheduler />
                 <RouterProvider router={router} />
-                <Toaster richColors closeButton />
+                <Toaster closeButton />
               </UndoableDeleteProvider>
             </CurrencyProvider>
           </RoundProvider>

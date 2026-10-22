@@ -18,6 +18,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
           cancelButton:
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+          // All toasts share the card style; only the icon carries the type.
+          success: "[&_[data-icon]]:text-[var(--status-offer-strong)]",
+          error:
+            "[&_[data-icon]]:text-destructive dark:[&_[data-icon]]:text-destructive-foreground",
+          warning: "[&_[data-icon]]:text-[var(--status-screening-strong)]",
+          info: "[&_[data-icon]]:text-[var(--status-applied-strong)]",
         },
       }}
       {...props}
