@@ -257,6 +257,11 @@
     font-family: var(--font-sans);
   }
 
+  /* Native checkboxes use the theme color (the checkmark contrast is automatic). */
+  input[type="checkbox"] {
+    accent-color: var(--primary);
+  }
+
   html {
     font-size: var(--font-size);
     font-family: var(--font-sans);
