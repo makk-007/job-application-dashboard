@@ -12,9 +12,10 @@ import {
   Plus,
   X,
   Download,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
-import { OfferDecision } from "../types";
+import { Offer, OfferDecision } from "../types";
 import {
   OfferWithApplication,
   getOffers,
@@ -29,6 +30,12 @@ import {
 } from "../../services/applications";
 import { ApplicationWithCompany } from "../types";
 import { exportOffersCSV } from "../utils/dataExport";
+import {
+  EMPTY_OFFER_FORM,
+  OfferFormState,
+  formToOfferFields,
+  offerToForm,
+} from "../utils/offerForm";
 import { useUndoableDelete } from "../context/UndoableDeleteContext";
 import { useCurrencies } from "../context/CurrencyContext";
 import { useIsMounted } from "../hooks/useIsMounted";
@@ -88,30 +95,31 @@ function formatDeadline(date: string | null): string {
   return `${formatted} (${days}d left)`;
 }
 
-// ── Add Offer Modal ──────────────────────────────────────────────────────
+// ── Offer Form Modal (add and edit) ──────────────────────────────────────
 
-function AddOfferModal({
-  applications,
+function OfferFormModal({
+  applications = [],
+  offer,
   onClose,
-  onSaved,
+  onCreated,
+  onUpdated,
 }: {
-  applications: ApplicationWithCompany[];
+  applications?: ApplicationWithCompany[];
+  /** When set, the modal edits this offer instead of adding a new one. */
+  offer?: OfferWithApplication;
   onClose: () => void;
-  onSaved: () => void;
+  onCreated?: () => void;
+  onUpdated?: (offer: Offer) => void;
 }) {
   const { currencies } = useCurrencies();
-  const [form, setForm] = useState({
-    applicationId: "",
-    baseSalary: "",
-    bonus: "",
-    signingBonus: "",
-    equity: "",
-    currency: "USD",
-    decisionDeadline: "",
-    decision: "pending" as OfferDecision,
-    benefitsNotes: "",
-    notes: "",
-  });
+  const isEdit = offer !== undefined;
+  const [form, setForm] = useState<OfferFormState>(
+    offer ? offerToForm(offer) : EMPTY_OFFER_FORM,
+  );
+  // Keep the saved currency selectable even if it was removed from Settings.
+  const currencyOptions = currencies.includes(form.currency)
+    ? currencies
+    : [form.currency, ...currencies];
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
@@ -119,30 +127,31 @@ function AddOfferModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!form.applicationId) {
+    if (!offer && !form.applicationId) {
       setFieldError("Select an application");
       return;
     }
     setSaving(true);
     try {
-      await createOffer({
-        applicationId: form.applicationId,
-        baseSalary: form.baseSalary ? Number(form.baseSalary) : null,
-        bonus: form.bonus ? Number(form.bonus) : null,
-        signingBonus: form.signingBonus ? Number(form.signingBonus) : null,
-        equity: form.equity,
-        currency: form.currency,
-        decisionDeadline: form.decisionDeadline || null,
-        decision: form.decision,
-        benefitsNotes: form.benefitsNotes,
-        notes: form.notes,
-      });
-      toast.success("Offer added");
-      onSaved();
-      onClose();
+      if (offer) {
+        const updated = await updateOffer(offer.id, formToOfferFields(form));
+        toast.success("Offer updated");
+        onUpdated?.(updated);
+      } else {
+        await createOffer({
+          applicationId: form.applicationId,
+          decision: form.decision,
+          ...formToOfferFields(form),
+        });
+        toast.success("Offer added");
+        onCreated?.();
+        onClose();
+      }
     } catch (e) {
       setError(getErrorMessage(e));
-      toast.error("Failed to add offer", { description: getErrorMessage(e) });
+      toast.error(isEdit ? "Failed to update offer" : "Failed to add offer", {
+        description: getErrorMessage(e),
+      });
     } finally {
       setSaving(false);
     }
@@ -162,7 +171,7 @@ function AddOfferModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-lg font-semibold text-card-foreground">
-            Add Offer
+            {isEdit ? "Edit Offer" : "Add Offer"}
           </h2>
           <button
             onClick={onClose}
@@ -179,35 +188,47 @@ function AddOfferModal({
               {error}
             </div>
           )}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
-              Application *
-            </label>
-            <select
-              value={form.applicationId}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, applicationId: e.target.value }));
-                setFieldError(null);
-              }}
-              className={`${selectCls} ${fieldError ? "border-destructive" : ""}`}
-            >
-              <option value="">Select an application...</option>
-              {applications.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.roleTitle} at {a.company.name}
-                </option>
-              ))}
-            </select>
-            {fieldError && (
-              <p className="text-xs text-destructive mt-1">{fieldError}</p>
-            )}
-            {applications.length === 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                No applications without an offer yet are available. Move an
-                application to Offer status first.
+          {offer ? (
+            <div>
+              <p className="block text-sm font-medium text-foreground mb-1.5">
+                Application
               </p>
-            )}
-          </div>
+              <p className="text-sm text-muted-foreground">
+                {offer.application.roleTitle} at{" "}
+                {offer.application.companyName}
+              </p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Application *
+              </label>
+              <select
+                value={form.applicationId}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, applicationId: e.target.value }));
+                  setFieldError(null);
+                }}
+                className={`${selectCls} ${fieldError ? "border-destructive" : ""}`}
+              >
+                <option value="">Select an application...</option>
+                {applications.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.roleTitle} at {a.company.name}
+                  </option>
+                ))}
+              </select>
+              {fieldError && (
+                <p className="text-xs text-destructive mt-1">{fieldError}</p>
+              )}
+              {applications.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  No applications without an offer yet are available. Move an
+                  application to Offer status first.
+                </p>
+              )}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">
               Compensation
@@ -220,7 +241,7 @@ function AddOfferModal({
                 }
                 className={`${selectCls} shrink-0`}
               >
-                {currencies.map((c) => (
+                {currencyOptions.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
               </select>
@@ -269,7 +290,7 @@ function AddOfferModal({
               className={inputCls}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={isEdit ? "" : "grid grid-cols-2 gap-3"}>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
                 Decision Deadline
@@ -283,27 +304,34 @@ function AddOfferModal({
                 className={inputCls}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Decision
-              </label>
-              <select
-                value={form.decision}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    decision: e.target.value as OfferDecision,
-                  }))
-                }
-                className={selectCls}
-              >
-                {DECISIONS.map((d) => (
-                  <option key={d} value={d}>
-                    {decisionConfig[d].label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {isEdit && (
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Change the decision from the offer card.
+              </p>
+            )}
+            {!isEdit && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  Decision
+                </label>
+                <select
+                  value={form.decision}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      decision: e.target.value as OfferDecision,
+                    }))
+                  }
+                  className={selectCls}
+                >
+                  {DECISIONS.map((d) => (
+                    <option key={d} value={d}>
+                      {decisionConfig[d].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">
@@ -345,10 +373,137 @@ function AddOfferModal({
               disabled={saving}
               className="flex-1 h-9 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
-              {saving ? "Saving…" : "Add Offer"}
+              {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Offer"}
             </button>
           </div>
         </form>
+      </motion.div>
+    </div>
+  );
+}
+
+// ── Offer Details Modal (read-only) ──────────────────────────────────────
+
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 text-sm">
+      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="text-foreground text-right tabular-nums break-words min-w-0">
+        {children}
+      </span>
+    </div>
+  );
+}
+
+function DetailNote({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-sm font-medium text-foreground mb-1">{label}</p>
+      <p
+        className={`text-sm whitespace-pre-wrap break-words ${value ? "text-foreground" : "text-muted-foreground"}`}
+      >
+        {value || "None"}
+      </p>
+    </div>
+  );
+}
+
+function OfferDetailsModal({
+  offer,
+  onClose,
+  onEdit,
+}: {
+  offer: OfferWithApplication;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const decision = decisionConfig[offer.decision];
+  const DecisionIcon = decision.icon;
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 8 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="bg-card rounded-xl border card-raised w-full sm:max-w-lg sm:max-h-[90vh] h-full sm:h-auto overflow-y-auto"
+      >
+        <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-border">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-card-foreground truncate">
+              {offer.application.roleTitle}
+            </h2>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+              <Building2 className="size-3 shrink-0" aria-hidden="true" />
+              <span className="truncate">{offer.application.companyName}</span>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close dialog"
+            className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-accent transition-colors shrink-0"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <span
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium ${decision.bg} ${decision.color}`}
+          >
+            <DecisionIcon className="size-3" aria-hidden="true" />
+            {decision.label}
+          </span>
+          <div className="space-y-2">
+            <DetailRow label="Base">
+              {formatMoney(offer.baseSalary, offer.currency)}
+            </DetailRow>
+            <DetailRow label="Bonus">
+              {formatMoney(offer.bonus, offer.currency)}
+            </DetailRow>
+            <DetailRow label="Signing">
+              {formatMoney(offer.signingBonus, offer.currency)}
+            </DetailRow>
+            <DetailRow label="Equity">{offer.equity || "Not specified"}</DetailRow>
+            <div className="pt-2 border-t border-border">
+              <DetailRow label="Est. Total">
+                <span className="font-semibold">
+                  {formatMoney(estimateTotalComp(offer), offer.currency)}
+                </span>
+              </DetailRow>
+            </div>
+            <DetailRow label="Deadline">
+              {formatDeadline(offer.decisionDeadline)}
+            </DetailRow>
+          </div>
+          <DetailNote label="Benefits Notes" value={offer.benefitsNotes} />
+          <DetailNote label="Notes" value={offer.notes} />
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 h-9 border border-border rounded-md text-sm text-foreground hover:bg-accent transition-colors"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={onEdit}
+              className="flex-1 inline-flex items-center justify-center gap-2 h-9 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              <Pencil className="size-3.5" aria-hidden="true" />
+              Edit
+            </button>
+          </div>
+        </div>
       </motion.div>
     </div>
   );
@@ -366,6 +521,10 @@ export function Offers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [modal, setModal] = useState<{
+    type: "view" | "edit";
+    id: string;
+  } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<OfferWithApplication | null>(
     null,
   );
@@ -419,6 +578,19 @@ export function Offers() {
       [...offers].sort((a, b) => estimateTotalComp(b) - estimateTotalComp(a)),
     [offers],
   );
+
+  const activeOffer = modal
+    ? (offers.find((o) => o.id === modal.id) ?? null)
+    : null;
+
+  // The update response has no joined application, so merge it into the
+  // existing row, then return to the read-only view of the saved offer.
+  const handleOfferUpdated = (updated: Offer) => {
+    setOffers((prev) =>
+      prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o)),
+    );
+    setModal({ type: "view", id: updated.id });
+  };
 
   const handleDecisionChange = async (
     offer: OfferWithApplication,
@@ -604,14 +776,20 @@ export function Offers() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.2 }}
-                    className={`bg-card rounded-xl border card-resting p-5 hover:card-raised transition-shadow duration-200 ${isTopOffer ? "ring-2 ring-[var(--status-offer-strong)]" : ""}`}
+                    onClick={() => setModal({ type: "view", id: offer.id })}
+                    className={`bg-card rounded-xl border card-resting p-5 hover:card-raised transition-shadow duration-200 cursor-pointer ${isTopOffer ? "ring-2 ring-[var(--status-offer-strong)]" : ""}`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-3">
-                      <div className="min-w-0">
-                        <p className="font-medium text-foreground truncate">
+                      {/* Click bubbles to the card, which opens the details. */}
+                      <button
+                        type="button"
+                        aria-label={`View offer details for ${offer.application.roleTitle}`}
+                        className="min-w-0 text-left"
+                      >
+                        <span className="block font-medium text-foreground truncate">
                           {offer.application.roleTitle}
-                        </p>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                        </span>
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                           <Building2
                             className="size-3 shrink-0"
                             aria-hidden="true"
@@ -619,10 +797,13 @@ export function Offers() {
                           <span className="truncate">
                             {offer.application.companyName}
                           </span>
-                        </div>
-                      </div>
+                        </span>
+                      </button>
                       <button
-                        onClick={() => setDeleteTarget(offer)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(offer);
+                        }}
                         title="Delete offer"
                         className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0"
                       >
@@ -692,7 +873,10 @@ export function Offers() {
                       {formatDeadline(offer.decisionDeadline)}
                     </p>
 
-                    <div className="flex flex-wrap gap-1.5">
+                    <div
+                      className="flex flex-wrap gap-1.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {DECISIONS.map((d) => {
                         const isSelected = offer.decision === d;
                         const Icon = decisionConfig[d].icon;
@@ -719,10 +903,29 @@ export function Offers() {
 
       <AnimatePresence>
         {showAddModal && (
-          <AddOfferModal
+          <OfferFormModal
             applications={availableApplications}
             onClose={() => setShowAddModal(false)}
-            onSaved={load}
+            onCreated={load}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {modal?.type === "view" && activeOffer && (
+          <OfferDetailsModal
+            key="view"
+            offer={activeOffer}
+            onClose={() => setModal(null)}
+            onEdit={() => setModal({ type: "edit", id: activeOffer.id })}
+          />
+        )}
+        {modal?.type === "edit" && activeOffer && (
+          <OfferFormModal
+            key="edit"
+            offer={activeOffer}
+            onClose={() => setModal({ type: "view", id: activeOffer.id })}
+            onUpdated={handleOfferUpdated}
           />
         )}
       </AnimatePresence>
